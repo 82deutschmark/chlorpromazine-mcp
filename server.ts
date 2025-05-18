@@ -8,34 +8,43 @@
  * Author: Claude
  */
 
-import 'dotenv/config';
+require('dotenv').config();
 
-// Import from the SDK
-import { Server } from '@modelcontextprotocol/sdk/server';
-import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp';
-import {
-  ListPromptsRequestSchema,
-  GetPromptRequestSchema,
-  ListToolsRequestSchema,
-  CallToolRequestSchema
-} from '@modelcontextprotocol/sdk/server/schemas';
+// Import the SDK using CommonJS require
+const mcp = require('@modelcontextprotocol/sdk');
+
+// Destructure the components we need from the SDK
+const { 
+  Server, 
+  StreamableHTTPServerTransport,
+  schemas: {
+    ListPromptsRequestSchema,
+    GetPromptRequestSchema,
+    ListToolsRequestSchema,
+    CallToolRequestSchema
+  }
+} = mcp;
 
 // Type definitions for request/response objects
-interface Request {
+type Request = {
   headers: Record<string, string | string[] | undefined>;
   method?: string;
   url?: string;
+  params?: Record<string, any>;
+  body?: any;
   socket: {
     remoteAddress?: string;
   };
-}
+};
 
-interface Response {
+type Response = {
   statusCode?: number;
-  end: (chunk: string) => void;
-}
+  setHeader: (name: string, value: string | number | string[]) => void;
+  end: (chunk?: string | (() => void), encoding?: string | (() => void), cb?: () => void) => void;
+  json: (body: any) => void;
+};
 
-type NextFunction = () => void;
+type NextFunction = (err?: any) => void;
 
 const SITE_FILTER = process.env.SITE_FILTER!;
 const PORT = Number(process.env.PORT) || 3000;
@@ -181,7 +190,7 @@ server.setRequestHandler(CallToolRequestSchema, async (req: any) => {
 
 // ---------------------------------------------------------------- transport
 const transport = new StreamableHTTPServerTransport({
-  serverOptions: { port: PORT }
+  port: PORT
 });
 
 // Add authentication middleware if API_KEY is provided
@@ -225,5 +234,38 @@ setInterval(() => {
   logEvent('debug', 'Health check: server is running');
 }, 60000);
 
-logEvent('info', 'Server started', { port: PORT, siteFilter: SITE_FILTER });
-console.log(`Chlorpromazine MCP server listening on ${PORT}`);
+// Main server startup function
+async function startServer() {
+  try {
+    await transport.start();
+    logEvent('info', 'Server started', { 
+      port: PORT, 
+      siteFilter: SITE_FILTER,
+      timestamp: new Date().toISOString() 
+    });
+    console.log(`Chlorpromazine MCP server listening on port ${PORT}`);
+  } catch (error) {
+    logEvent('error', 'Failed to start server', { 
+      error: error instanceof Error ? error.message : String(error) 
+    });
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
+}
+
+// Start the server
+startServer();
+
+// Handle process termination
+process.on('SIGTERM', () => {
+  logEvent('info', 'SIGTERM received. Shutting down gracefully...');
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  logEvent('info', 'SIGINT received. Shutting down gracefully...');
+  process.exit(0);
+});
+
+// Export types for module compatibility
+export {};
