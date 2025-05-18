@@ -4,6 +4,9 @@
   "description": "Chlorpromazine Model Context Protocol (MCP) Server",
   "main": "dist/server.js",
   "type": "module",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "directories": {
     "doc": "docs"
   },
