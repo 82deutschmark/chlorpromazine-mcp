@@ -1,0 +1,36 @@
+{
+  "name": "chlorpromazine-mcp",
+  "version": "0.2.0",
+  "description": "Chlorpromazine Model Context Protocol (MCP) Server",
+  "main": "dist/server.js",
+  "type": "module",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "dev": "ts-node server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "prepare": "npm run build",
+    "test": "node test/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/82deutschmark/chlorpromazine-mcp.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/82deutschmark/chlorpromazine-mcp/issues"
+  },
+  "homepage": "https://github.com/82deutschmark/chlorpromazine-mcp#readme",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.11.4",
+    "dotenv": "^16.5.0"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  }
+}
