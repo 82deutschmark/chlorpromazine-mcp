@@ -2,10 +2,10 @@
  * Chlorpromazine MCP Server
  * 
  * This file implements a Model Context Protocol server that provides:
- * 1. Two prompts (sequential_thinking and fact_checked_answer)
+ * 1. Two prompts (sober_thinking and fact_checked_answer)
  * 2. One search tool (kill_trip) that searches documentation via SerpAPI
  * 
- * Author: Claude
+ * Author: Claude and o3
  */
 
 require('dotenv').config();
@@ -109,7 +109,7 @@ server.setRequestHandler(ListPromptsRequestSchema, async () => {
   return {
     prompts: [
       {
-        name: 'sequential_thinking',
+        name: 'sober_thinking',
         description: 'Solve problems step‑by‑step.',
         arguments: [{ name: 'QUESTION_TEXT', description: 'Problem statement', required: true }]
       },
@@ -127,7 +127,7 @@ server.setRequestHandler(GetPromptRequestSchema, async (req: any) => {
   const { name, arguments: args } = req.params;
   logEvent('info', 'Handling prompts/get request', { promptName: name });
   
-  if (name === 'sequential_thinking') {
+  if (name === 'sober_thinking') {
     return {
       description: 'Step reasoning',
       messages: [
