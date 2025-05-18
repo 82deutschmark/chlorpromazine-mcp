@@ -22,7 +22,7 @@ Hello World!  I made this specificlly for vibe coding sessions which are when de
 
 ### Prerequisites
 
-- Node.js 18 or higher
+- Node.js 18 or higher (ES Module support is utilized)
 - SerpAPI key (get one at [serpapi.com](https://serpapi.com))
 
 ### Installation
@@ -48,6 +48,8 @@ PORT=3000                            # Server port (default: 3000)
 
 ## Usage
 
+The server now uses native Node.js `http.Server` for more robust request handling and lifecycle management, with the MCP transport integrated into it.
+
 ### Development
 
 ```bash
@@ -69,11 +71,17 @@ npm test
 
 ## API Endpoints
 
-- `/healthz`: Health check endpoint (GET)
-- `/v1/prompts/list`: List available prompts
-- `/v1/prompts/get`: Get a specific prompt
-- `/v1/tools/list`: List available tools
-- `/v1/tools/call`: Call a specific tool
+The core MCP functionality for prompts and tools is handled via the Model Context Protocol SDK. The server also provides:
+
+- `/healthz`: Health check endpoint (GET) - directly handled by the Node.js `http.Server`.
+- `/v1/prompts/list`: List available prompts (via MCP SDK)
+- `/v1/prompts/get`: Get a specific prompt (via MCP SDK)
+- `/v1/tools/list`: List available tools (via MCP SDK)
+- `/v1/tools/call`: Call a specific tool (via MCP SDK)
+
+## SDK Integration Notes
+
+This project has been updated to use `@modelcontextprotocol/sdk` version 1.11.4 with ES Module imports. This required careful attention to import paths (e.g., ensuring `.js` extensions) and refactoring the server startup to use the standard Node.js `http` module to wrap the SDK's `StreamableHTTPServerTransport`.
 
 ## Deployment
 
@@ -93,4 +101,4 @@ The server should not be exposed directly to the public internet without proper 
 ## Author
 
 ClaudeAI
-
+Cascade (Gemini 2.5 Pro) - Contributed to SDK integration and ES Module refactoring.

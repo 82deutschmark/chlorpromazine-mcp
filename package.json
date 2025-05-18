@@ -11,14 +11,13 @@
     "doc": "docs"
   },
   "scripts": {
-    "dev": "ts-node server.ts",
+    "dev": "tsx watch server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
     "prepare": "npm run build",
     "test": "node test/index.js",
     "clean": "rimraf dist",
-    "prestart": "npm run build",
-    "predev": "npm run build"
+    "prestart": "npm run build"
   },
   "repository": {
     "type": "git",
@@ -39,6 +38,7 @@
     "@types/node": "^22.15.18",
     "rimraf": "^6.0.1",
     "ts-node": "^10.9.2",
+    "tsx": "^4.19.4",
     "typescript": "^5.8.3"
   }
 }

@@ -2,6 +2,20 @@
 
 All notable changes to the Chlorpromazine MCP Server project will be documented in this file.
 
+## [0.4.1] - 2025-05-18
+
+*Cascade (Gemini 2.5 Pro)*
+
+### Changed
+- Successfully integrated `@modelcontextprotocol/sdk` v1.11.4 using ES Module imports (`.js` extensions, direct paths to `server/index.js`, `server/streamableHttp.js`, `types.js`).
+- Refactored server startup in `server.ts` to use Node.js `http.Server` for listening and initial request handling (authentication, `/healthz` route).
+- `StreamableHTTPServerTransport` now correctly initialized (removed `port`, `addRoute`, `beforeHandle` options; set `sessionIdGenerator: undefined` for stateless operation).
+
+### Fixed
+- Resolved `ERR_PACKAGE_PATH_NOT_EXPORTED`, `ERR_MODULE_NOT_FOUND`, and `SyntaxError` related to SDK module imports.
+- Addressed TypeScript lint errors regarding `StreamableHTTPServerTransportOptions` (`port`, `addRoute`, `beforeHandle`, missing `sessionIdGenerator`).
+- Ensured server starts reliably after fixing `EADDRINUSE` port conflict issues.
+
 ## [0.4.0] - 2025-05-18
 
 ### Added

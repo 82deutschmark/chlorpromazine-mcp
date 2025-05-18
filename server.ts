@@ -6,15 +6,17 @@
 
 import 'dotenv/config';
 import type { IncomingMessage, ServerResponse } from 'http';
+import http from 'http';
 
+// Import the SDK properly with explicit paths
+import { Server } from '@modelcontextprotocol/sdk/dist/esm/server/index.js';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/dist/esm/server/streamableHttp.js';
 import {
-  Server,
-  StreamableHTTPServerTransport,
   ListPromptsRequestSchema,
   GetPromptRequestSchema,
   ListToolsRequestSchema,
   CallToolRequestSchema
-} from '@modelcontextprotocol/sdk';
+} from '@modelcontextprotocol/sdk/dist/esm/types.js';
 
 // --------------------------------------------------------------------
 // Constants & helpers
@@ -197,28 +199,42 @@ Please analyze this issue, check the README and CHANGELOG, and suggest how to fi
 // Bootstrap
 // --------------------------------------------------------------------
 async function main(): Promise<void> {
-  const server = buildServer();
+  const mcpServer = buildServer();
 
+  // Initialize transport without port or beforeHandle, as these are handled by the http.Server
   const transport = new StreamableHTTPServerTransport({
-    port: PORT,
-    beforeHandle: (req: IncomingMessage, res: ServerResponse, next: () => void) => {
-      if (API_KEY) {
-        const auth = req.headers['authorization'];
-        if (auth !== `Bearer ${API_KEY}`) {
-          res.writeHead(401, { 'content-type': 'application/json' });
-          res.end(JSON.stringify({ error: 'unauthorized' }));
-          log('warn', 'Unauthorized', { path: req.url });
-          return;
-        }
-      }
-      next();
-    }
+    sessionIdGenerator: undefined, // Explicitly set for stateless transport
+    // enableJsonResponse: true, // Example if needed
   });
 
-  transport.addRoute('GET', '/healthz', (_req: IncomingMessage, res: ServerResponse) => res.end('ok'));
+  // Connect MCP server to the transport
+  await mcpServer.connect(transport);
 
-  await server.connect(transport);
-  log('info', 'Server listening', { port: PORT, sites: searchSites.join(',') });
+  // Create a standard Node.js HTTP server
+  const httpServer = http.createServer(async (req: IncomingMessage, res: ServerResponse) => {
+    // Handle authentication (previously in beforeHandle)
+    if (API_KEY) {
+      const auth = req.headers['authorization'];
+      if (auth !== `Bearer ${API_KEY}`) {
+        res.writeHead(401, { 'content-type': 'application/json' });
+        res.end(JSON.stringify({ error: 'unauthorized' }));
+        log('warn', 'Unauthorized', { path: req.url });
+        return;
+      }
+    }
+
+    if (req.url === '/healthz' && req.method === 'GET') {
+      res.writeHead(200, { 'Content-Type': 'text/plain' });
+      res.end('ok');
+      return;
+    }
+    // For all other routes, let the MCP transport handle it
+    await transport.handleRequest(req, res);
+  });
+
+  httpServer.listen(PORT, () => {
+    log('info', 'Server listening', { port: PORT, sites: searchSites.join(',') });
+  });
 }
 
 main().catch(err => {
