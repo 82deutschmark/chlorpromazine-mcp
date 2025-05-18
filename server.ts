@@ -34,7 +34,18 @@ const DEFAULT_SITES = [
   'docs.ruby-lang.org',
   'nodejs.org',
   'pypi.org',
-  'maven.apache.org'
+  'maven.apache.org',
+  'platform.openai.com',
+  'docs.anthropic.com',
+  'ai.google.dev',
+  'platform.openai.com/docs',
+  'platform.openai.com/api-reference',
+  'docs.anthropic.com/claude',
+  'ai.google.dev/gemini',
+  'modelcontextprotocol.io',
+  'modelcontextprotocol.io/tutorials',
+  'modelcontextprotocol.io/docs',
+  'modelcontextprotocol.io/examples'
 ];
 
 const PORT = Number(process.env.PORT) || 3000;
@@ -73,7 +84,7 @@ function buildServer(): any {
   server.setRequestHandler(ListPromptsRequestSchema, async () => ({
     prompts: [
       {
-        name: 'sequential_thinking',
+        name: 'sober_thinking',
         description: 'Solve problems step‑by‑step.',
         arguments: [{ name: 'QUESTION_TEXT', description: 'Problem statement', required: true }]
       },
@@ -81,6 +92,16 @@ function buildServer(): any {
         name: 'fact_checked_answer',
         description: 'Answer with strict fact‑checking.',
         arguments: [{ name: 'USER_QUERY', description: 'User question', required: true }]
+      },
+      {
+        name: 'buzzkill',
+        description: 'Analyze recent changes and suggest fixes for vibe coding sessions.',
+        arguments: [
+          { name: 'ISSUE_DESCRIPTION', description: 'Description of the issue or what went wrong', required: true },
+          { name: 'RECENT_CHANGES', description: 'Summary of recent changes or features added', required: true },
+          { name: 'EXPECTED_BEHAVIOR', description: 'What you expected to happen', required: true },
+          { name: 'ACTUAL_BEHAVIOR', description: 'What actually happened', required: true }
+        ]
       }
     ]
   }));
@@ -88,9 +109,9 @@ function buildServer(): any {
   server.setRequestHandler(GetPromptRequestSchema, async (req: any) => {
     const { name, arguments: args } = req.params;
     switch (name) {
-      case 'sequential_thinking':
+      case 'sober_thinking':
         return {
-          description: 'Step reasoning',
+          description: 'Stop vibing and think deeply',
           messages: [
             { role: 'system', content: { type: 'text', text: 'Think step‑by‑step and verify each step.' } },
             { role: 'user', content: { type: 'text', text: `Problem: ${args['QUESTION_TEXT']}` } }
@@ -102,6 +123,44 @@ function buildServer(): any {
           messages: [
             { role: 'system', content: { type: 'text', text: 'Provide only verified facts.' } },
             { role: 'user', content: { type: 'text', text: `Question: ${args['USER_QUERY']}` } }
+          ]
+        };
+      case 'buzzkill':
+        return {
+          description: 'Analyze and fix vibe coding issues',
+          messages: [
+            { 
+              role: 'system', 
+              content: { 
+                type: 'text', 
+                text: `You are an experienced developer named Buzz Killington aka Buzzkill, the reality check for vibe coding sessions. Your job is to:
+1. Analyze the reported issues in the context of recent changes, realizing that the user is not a developer and may not have a clear understanding of the codebase or computer science fundamentals
+2. Check the codebase for relevant context  
+3. Check README.md and CHANGELOG.md for relevant context
+4. Identify where best practices for modularity, readability, maintainability, and accessibility are being violated
+5. Identify potential causes based on the description and recent changes
+6. Suggest specific fixes and next steps and document them as a checklist
+7. Recommend using sober_thinking or fact_checked_answer or kill_trip for more information
+8. Never use code blocks or show code in your response.
+
+Always end your response with a suggestion to use kill_trip for up to date documentation and sober_thinking and fact_checked_answer for further analysis.` 
+              } 
+            },
+            { 
+              role: 'user', 
+              content: { 
+                type: 'text', 
+                text: `Issue Description: ${args['ISSUE_DESCRIPTION']}
+
+Recent Changes: ${args['RECENT_CHANGES']}
+
+Expected Behavior: ${args['EXPECTED_BEHAVIOR']}
+
+Actual Behavior: ${args['ACTUAL_BEHAVIOR']}
+
+Please analyze this issue, check the README and CHANGELOG, and suggest how to fix it.` 
+              } 
+            }
           ]
         };
       default:

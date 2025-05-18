@@ -2,14 +2,21 @@
 
 A Model Context Protocol (MCP) server implementation that provides prompts and documentation search capabilities.
 
+Hello World!  I made this specificlly for vibe coding sessions which are when devs just give in to the vibes and let LLM agents hallucinate whatever they want and hope that it is good code.  (Which is what I do all the time and why I made this tool, I need it!) I love vibe coding sessions, but sometimes they turn into a whole bad trip. This MCP server is literally to help your LLM agents stop trippin! 
+
 ## Features
 
-- Two MCP-compliant prompts: `sequential_thinking` and `fact_checked_answer`
-- Documentation search tool `kill_trip` powered by SerpAPI
-- Structured JSON logging
-- Health check endpoint for uptime monitoring
-- Optional API key authentication
-- Automated testing
+- **MCP-compliant Prompts**:
+  - `sober_thinking`: Stop vibing and think deeply about problems
+  - `fact_checked_answer`: Get strictly factual responses
+  - `buzzkill`: Analyze and fix issues in vibe coding sessions
+- **Tools**:
+  - `kill_trip`: Search trusted dev docs & communities
+- **Infrastructure**:
+  - Structured JSON logging
+  - Health check endpoint for uptime monitoring
+  - Optional API key authentication
+  - Automated testing
 
 ## Setup
 
@@ -30,10 +37,13 @@ npm install
 Create a `.env` file with the following variables:
 
 ```env
-SERPAPI_KEY=your_serpapi_key_here
-SITE_FILTER=platform.openai.com/docs  # Default search domain
-PORT=8080                            # Server port
-# API_KEY=shared_secret              # Optional: Uncomment for API key auth
+# Required:
+SERPAPI_KEY=your_serpapi_key_here  # Get from https://serpapi.com
+
+# Optional:
+SITE_FILTER=platform.openai.com,docs.anthropic.com  # Comma-separated list of allowed domains
+PORT=3000                            # Server port (default: 3000)
+# API_KEY=shared_secret              # Uncomment and set for API key authentication
 ```
 
 ## Usage

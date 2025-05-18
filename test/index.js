@@ -86,7 +86,7 @@ try {
   
   // Test 3: /v1/prompts/get
   const promptsGetPayload = {
-    name: 'sequential_thinking',
+    name: 'sober_thinking',
     arguments: { 'QUESTION_TEXT': 'Test question' }
   };
   

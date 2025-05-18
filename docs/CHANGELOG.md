@@ -2,6 +2,19 @@
 
 All notable changes to the Chlorpromazine MCP Server project will be documented in this file.
 
+## [0.4.0] - 2025-05-18
+
+### Added
+- New `buzzkill` prompt for analyzing and fixing issues in vibe coding sessions
+- Enhanced prompt descriptions for better clarity
+- Improved system prompts for more effective guidance
+
+### Changed
+- Renamed `sequential_thinking` prompt to `sober_thinking` for better clarity
+- Standardized server port to 3000 across all configuration files
+- Updated README.md with project purpose and usage instructions
+- Enhanced error messages for better debugging
+
 ## [0.3.2] - 2025-05-18
 
 ### Added
