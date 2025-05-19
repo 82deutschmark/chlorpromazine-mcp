@@ -50,6 +50,15 @@ PORT=3000                            # Server port (default: 3000)
 
 The server now uses native Node.js `http.Server` for more robust request handling and lifecycle management, with the MCP transport integrated into it.
 
+## TypeScript Safety & Handler Robustness
+
+- All MCP request handlers use strict parameter shapes (`(request, extra)`), always accessing `request.params` as required by the MCP SDK.
+- Defensive type guards are used for all user input derived from Zod schemas, including `params.model`, `userContent.text`, and tool arguments, to prevent `unknown` type errors and provide clear, actionable error messages.
+- The `model` field in responses is always a string, with a fallback to `DEFAULT_ASSISTANT_MODEL` if not provided or not a string.
+- All handler signatures and return types strictly follow MCP SDK v1.11.4 conventions.
+
+*Improvements by Claude 3.5 Sonnet (2025-05-18)*
+
 ### Development
 
 ```bash

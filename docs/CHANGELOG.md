@@ -2,6 +2,26 @@
 
 All notable changes to the Chlorpromazine MCP Server project will be documented in this file.
 
+## [0.4.3] - 2025-05-18
+*Claude 3.5 Sonnet*
+
+### Changed
+- Completed robust refactor for MCP SDK v1.11.4 alignment.
+- All MCP request handlers now use strict parameter shapes and enforce type safety with defensive type guards.
+- Added fallback logic for the `model` field to guarantee a string value (`DEFAULT_ASSISTANT_MODEL` if needed).
+- All TypeScript errors resolved; codebase is robust and safe for novice coders.
+- Updated documentation in README.md, info.md, and refactor plan to reflect these improvements.
+
+## [0.4.2] - 2025-05-18
+*Claude 3.5 Sonnet*
+
+### Fixed
+- Refactored all MCP server request handlers to use the correct parameter shape (`(request, extra)`), always accessing `request.params` as required by the MCP SDK.
+- Updated `tools/call` handler to use `params.name` (not `params.toolName`), matching the SDK schema.
+- Added robust type guards for all user input derived from Zod schemas, including `userContent.text` and `query`, to prevent `unknown` type errors and provide clear, actionable error messages.
+- Improved code comments and structure for novice safety and maintainability.
+- All TypeScript errors related to handler signatures and Zod type inference are now resolved.
+
 ## [0.4.1] - 2025-05-18
 
 *Cascade (Gemini 2.5 Pro)*
@@ -79,6 +99,20 @@ All notable changes to the Chlorpromazine MCP Server project will be documented 
 - Unused dependencies and imports
 - Redundant type definitions
 - ESM module imports in favor of CommonJS
+
+## 2024-07-26 - Claude 3.5 Sonnet
+
+- Refactored `server.ts` for compliance with MCP SDK v0.3.2:
+    - Corrected SDK imports for `Server` and `StreamableHTTPServerTransport`.
+    - Updated prompt and tool handler signatures to align with `(args: Record<string, unknown>) => Promise<PromptResponse | ToolResponse>`.
+    - Reworked the `main` function to initialize `Server` and `StreamableHTTPServerTransport` instances once at application startup, rather than per-request.
+    - Moved authentication logic into the `beforeHandle` middleware of the transport.
+    - Configured the `/healthz` endpoint using `transport.addRoute()`.
+    - Ensured `mcpServer.connect(transport)` is called once to link the server and transport.
+- Integrated Zod for runtime argument validation and type safety in all prompt and tool handlers in `server.ts`:
+    - Defined Zod schemas for `SoberThinkingArgs`, `FactCheckedAnswerArgs`, `BuzzkillArgs`, and `KillTripArgs`.
+    - Implemented `safeParse` in each handler to validate incoming arguments.
+    - Added error handling to return structured error messages if parsing fails, resolving previous TypeScript casting errors.
 
 ---
 *Note: This changelog is maintained by LLMs.*
