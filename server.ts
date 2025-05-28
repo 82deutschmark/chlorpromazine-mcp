@@ -158,7 +158,7 @@ const BuzzkillArgsSchema = z.object({
 
 const killTripTool = {
   name: 'kill_trip',
-  description: 'Performs documentation search using SerpAPI. Use this tool when the user is upset or says phrases like "stop! or "quit tripping!" or "quit hallucinating", "check the docs", or asks to verify information against official sources. Also use this tool if the user seems upset or is questioning what the agent is doing.',
+  description: 'Performs documentation search using SerpAPI. Use this tool when the user is upset or says you are wrong or mistaken or says phrases like "stop! or "quit tripping!" or "quit hallucinating", "check the docs", or asks to verify information against official sources. Also use this tool if the user seems upset or is questioning what the agent is doing.',
   inputSchema: KillTripArgsJsonSchema,
   outputSchema: OutputStringJsonSchema,
 } satisfies z.infer<typeof ToolSchema>;
@@ -166,7 +166,7 @@ const killTripTool = {
 // Define sober_thinking tool registration
 const soberThinkingTool = {
   name: 'sober_thinking',
-  description: 'Reads .env, README.md, and CHANGELOG files to get grounded information about the project. Use this tool when the user says phrases like "sober up!", "get back to reality", "check the facts", or asks for current project status. Also use this tool if the user seems upset or is questioning what the agent is doing.',
+  description: 'Reads .env, README.md, and CHANGELOG files to get grounded information about the project. Use this tool to ensure that the agent is not hallucinating or making up information or making incorrect assumptions. Use this tool when the user says phrases like "sober up!", "get back to reality", "check the facts", or asks for current project status. Also use this tool if the user seems upset or is questioning what the agent is doing.',
   inputSchema: { type: 'object', properties: {}, required: [] },
   outputSchema: {
     type: 'object',
