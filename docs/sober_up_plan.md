@@ -18,7 +18,7 @@ Replace the current `fact_checked_answer` prompt with a more robust `sober_up` f
 - [ ] Validate network/proxy settings if applicable
 
 ### 2. Project Configuration
-- [ ] Verify deployment target (Cloudflare, not Netlify)
+- [ ] Verify deployment target (Cloudflare or Vercel, NEVER Netlify)
 - [ ] Check project dependencies and versions
 - [ ] Validate project structure
 - [ ] Verify configuration files (.env, etc.)

@@ -107,6 +107,14 @@ All notable changes to the Chlorpromazine MCP Server project will be documented 
     - Updated prompt and tool handler signatures to align with `(args: Record<string, unknown>) => Promise<PromptResponse | ToolResponse>`.
     - Reworked the `main` function to initialize `Server` and `StreamableHTTPServerTransport` instances once at application startup, rather than per-request.
     - Moved authentication logic into the `beforeHandle` middleware of the transport.
+
+## [Unreleased] - 2025-05-27T23:28:16-04:00
+*GPT-4.1 (Cascade)*
+
+### Changed
+- Updated `tools/call` handler in `server.ts` so that all tool call results always include BOTH classic `content` (array of text content parts) and `structuredContent` fields. This ensures compatibility with both unstructured and structured MCP clients. Added file/module-level comments explaining this MCP compatibility requirement.
+- Registered `sober_thinking` tool, which reads the .env file (truncated values), and fully reads README.md and changelog files for the agent.
+
     - Configured the `/healthz` endpoint using `transport.addRoute()`.
     - Ensured `mcpServer.connect(transport)` is called once to link the server and transport.
 - Integrated Zod for runtime argument validation and type safety in all prompt and tool handlers in `server.ts`:

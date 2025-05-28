@@ -2,12 +2,25 @@
  * Chlorpromazine MCP Server – TypeScript compile‑safe (v0.3.2)
  * =============================================================
  * Type-safe implementation with proper type declarations
+ *
+ * MCP Compatibility Note:
+ * For all tools/call results, always return BOTH:
+ *   - content: classic array of text content parts (for unstructured/legacy clients)
+ *   - structuredContent: structured result object (for advanced clients)
+ * This ensures maximum compatibility with all MCP clients.
+ *
+ * Updated by GPT-4.1 (Cascade):
+ * - Enforced dual return format for tools/call.
+ * - Registered 'sober_thinking' tool for reading .env (truncated), README.md, and changelog files (full).
+ * Timestamp: 2025-05-27T23:28:16-04:00
  * ============================================================= */
 
 import 'dotenv/config';
 import type { IncomingMessage, ServerResponse } from 'http';
 import http from 'node:http';
 import { randomUUID } from 'node:crypto'; // Added import
+import { promises as fs } from 'node:fs'; // For sober_thinking tool (GPT-4.1)
+import { join } from 'node:path'; // For sober_thinking tool (GPT-4.1)
 
 // Import the MCP SDK
 import type { AuthInfo } from '@modelcontextprotocol/sdk/server/auth/types.js'; // Re-added
@@ -142,11 +155,23 @@ const BuzzkillArgsSchema = z.object({
 });
 
 const killTripTool = {
-  name: 'kill_trip', // Corrected: 'name' instead of 'toolName'
+  name: 'kill_trip',
   description: 'Performs a SerpAPI search using the provided query string.',
-  inputSchema: KillTripArgsJsonSchema, // Use the JSON Schema object
-  outputSchema: OutputStringJsonSchema,    // Use the corrected object schema
-} satisfies z.infer<typeof ToolSchema>; // Satisfies SDK's ToolSchema
+  inputSchema: KillTripArgsJsonSchema,
+  outputSchema: OutputStringJsonSchema,
+} satisfies z.infer<typeof ToolSchema>;
+
+// Define sober_thinking tool registration
+const soberThinkingTool = {
+  name: 'sober_thinking',
+  description: 'Reads .env file variables (truncated/omitted values), and fully reads README.md and CHANGELOG/CHANGELOG.md for the agent.',
+  inputSchema: { type: 'object', properties: {}, required: [] },
+  outputSchema: {
+    type: 'object',
+    properties: { content: { type: 'string', description: 'Combined file contents.' } },
+    required: ['content']
+  },
+} satisfies z.infer<typeof ToolSchema>;
 
 // Placeholder for the actual SerpAPI search function
 async function serpSearch(query: string): Promise<string> {
@@ -267,6 +292,12 @@ function buildServer() {
             inputSchema: killTripTool.inputSchema,
             outputSchema: killTripTool.outputSchema,
           },
+          {
+            name: soberThinkingTool.name,
+            description: soberThinkingTool.description,
+            inputSchema: soberThinkingTool.inputSchema,
+            outputSchema: soberThinkingTool.outputSchema,
+          },
         ],
       } satisfies SdkListToolsResult;
     });
@@ -274,33 +305,104 @@ function buildServer() {
   // Restore tools/call handler
   // Handler for tools/call (fix: use request, not params)
   // Handler for tools/call (fix: use params.name, not params.toolName)
+
   server.setRequestHandler(
     CallToolRequestSchema,
     async (request, extra): Promise<SdkCallToolResult> => {
       const params = request.params;
       console.log('Handling tools/call request:', params, 'with extra:', extra);
 
+      // Handler for sober_thinking tool
+      if (params.name === 'sober_thinking') {
+        try {
+          const cwd = process.cwd();
+          const files = [
+            'README.md',
+            '.env',
+            'CHANGELOG',
+            'CHANGELOG.md',
+          ].map(f => join(cwd, f));
+
+          // Helper to read .env and truncate/omit values
+          async function safeReadEnv(filePath: string): Promise<string> {
+            try {
+              const raw = await fs.readFile(filePath, 'utf8');
+              // Truncate/omit values for security
+              return raw.split('\n').map(line => {
+                if (line.trim().length === 0 || line.trim().startsWith('#')) return line;
+                const [k] = line.split('=', 1);
+                return `${k}=<hidden>`;
+              }).join('\n');
+            } catch {
+              return '(File not found or unreadable)';
+            }
+          }
+
+          // Read all files, with special handling for .env
+          const results = await Promise.all(
+            files.map(async f => {
+              const name = f.split(/[\\/]/).pop();
+              if (name === '.env') {
+                return `## ${name}\n${await safeReadEnv(f)}\n\n`;
+              } else {
+                try {
+                  return `## ${name}\n${await fs.readFile(f, 'utf8')}\n\n`;
+                } catch {
+                  return `## ${name}\n(File not found or unreadable)\n\n`;
+                }
+              }
+            })
+          );
+          const output = results.join('\n');
+
+          return {
+            toolName: params.name,
+            toolRunId: params.toolRunId,
+            isError: false,
+            structuredContent: { content: output },
+            content: [
+              { type: 'text', text: output }
+            ]
+          } satisfies SdkCallToolResult;
+        } catch (e: any) {
+          return {
+            toolName: params.name,
+            toolRunId: params.toolRunId,
+            isError: true,
+            error: e.message ?? 'Failed reading files.',
+            structuredContent: {},
+            content: [
+              { type: 'text', text: e.message ?? 'Failed reading files.' }
+            ]
+          } satisfies SdkCallToolResult;
+        }
+      }
+
       // Per MCP SDK, the tool name is in params.name
       if (params.name === 'kill_trip') {
         const validationResult = KillTripArgsSchema.safeParse(params.input);
         if (!validationResult.success) {
+          const errorMsg = `Invalid input: ${validationResult.error.message}`;
           console.error('Invalid input for kill_trip:', validationResult.error);
           return {
             toolName: params.name,
             toolRunId: params.toolRunId,
             isError: true,
-            error: `Invalid input: ${validationResult.error.message}`,
+            error: errorMsg,
+            content: [{ type: 'text', text: errorMsg }],
             structuredContent: {},
           } satisfies SdkCallToolResult;
         }
         // Defensive type guard for query
         const { query } = validationResult.data as { query: unknown };
         if (typeof query !== 'string') {
+          const errorMsg = 'Invalid input: query must be a string';
           return {
             toolName: params.name,
             toolRunId: params.toolRunId,
             isError: true,
-            error: 'Invalid input: query must be a string',
+            error: errorMsg,
+            content: [{ type: 'text', text: errorMsg }],
             structuredContent: {},
           } satisfies SdkCallToolResult;
         }
@@ -311,25 +413,30 @@ function buildServer() {
             toolName: params.name,
             toolRunId: params.toolRunId,
             isError: false,
+            content: [{ type: 'text', text: searchResultString }],
             structuredContent: { result: searchResultString },
           } satisfies SdkCallToolResult;
         } catch (e: any) {
+          const errorMsg = e.message || 'SerpAPI search failed.';
           console.error(`Error during SerpAPI search for query "${query}":`, e);
           return {
             toolName: params.name,
             toolRunId: params.toolRunId,
             isError: true,
-            error: e.message || 'SerpAPI search failed.',
+            error: errorMsg,
+            content: [{ type: 'text', text: errorMsg }],
             structuredContent: {},
           } satisfies SdkCallToolResult;
         }
       } else {
-        console.error(`Tool '${params.name}' not found.`);
+        const errorMsg = `Tool '${params.name}' not found.`;
+        console.error(errorMsg);
         return {
           toolName: params.name,
           toolRunId: params.toolRunId,
           isError: true,
-          error: `Tool '${params.name}' not found.`,
+          error: errorMsg,
+          content: [{ type: 'text', text: errorMsg }],
           structuredContent: {},
         } satisfies SdkCallToolResult;
       }

@@ -1,4 +1,4 @@
-# Chlorpromazine MCP Server
+# Chlorpromazine MCP Server aka Buzz Killington the Trip Killer
 
 A Model Context Protocol (MCP) server implementation that provides prompts and documentation search capabilities.
 
@@ -12,11 +12,7 @@ Hello World!  I made this specificlly for vibe coding sessions which are when de
   - `buzzkill`: Analyze and fix issues in vibe coding sessions
 - **Tools**:
   - `kill_trip`: Search trusted dev docs & communities
-- **Infrastructure**:
-  - Structured JSON logging
-  - Health check endpoint for uptime monitoring
-  - Optional API key authentication
-  - Automated testing
+
 
 ## Setup
 
@@ -108,6 +104,8 @@ The server should not be exposed directly to the public internet without proper 
 2. Enable API key authentication by setting the API_KEY environment variable
 
 ## Author
-
+@82deutschmark 
 ClaudeAI
 Cascade (Gemini 2.5 Pro) - Contributed to SDK integration and ES Module refactoring.
+
+[![smithery badge](https://smithery.ai/badge/@82deutschmark/chlorpromazine-mcp)](https://smithery.ai/server/@82deutschmark/chlorpromazine-mcp)
