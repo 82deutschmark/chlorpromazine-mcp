@@ -35,7 +35,7 @@ import {
   NotificationSchema, // Base notification schema
   ResultSchema, // Base result schema
   TextContentSchema,     // Imported: For single text content parts
-  ContentListSchema,   // Imported: For lists of content parts (e.g., in MessageSchema.content)
+  // ContentListSchema,   // TODO: MCP compatibility placeholder. Not exported by current SDK version. Uncomment when available.
   // ContentPartSchema, // Removed: Not directly exported or used
   SamplingMessageSchema, // Correct schema for sampling/createMessage messages
   CreateMessageRequestSchema, // Full schema for sampling/createMessage request
@@ -102,7 +102,9 @@ export type MyServerResult =
 
 type SdkTextContent = z.infer<typeof TextContentSchema>; // This is correct for a single text part
 type MyTextContentPart = z.infer<typeof TextContentSchema>; // Alias for clarity
-type SdkContentList = z.infer<typeof ContentListSchema>; // For arrays of mixed content parts
+// TODO: MCP compatibility placeholder. The SDK does not currently export ContentListSchema.
+//       This is scaffolding for future support of mixed content parts (text, image, etc.).
+type SdkContentList = any; // Replace with z.infer<typeof ContentListSchema> when available in SDK
 
 type SdkMessage = z.infer<typeof SamplingMessageSchema>; // Corrected: Use SamplingMessageSchema
 type SdkMessageContentPart = MyTextContentPart; // Corrected: a single part is MyTextContentPart (or a broader union if handling images etc.)
@@ -156,7 +158,7 @@ const BuzzkillArgsSchema = z.object({
 
 const killTripTool = {
   name: 'kill_trip',
-  description: 'Performs a SerpAPI search using the provided query string.',
+  description: 'Performs documentation search using SerpAPI. Use this tool when the user is upset or says phrases like "stop! or "quit tripping!" or "quit hallucinating", "check the docs", or asks to verify information against official sources. Also use this tool if the user seems upset or is questioning what the agent is doing.',
   inputSchema: KillTripArgsJsonSchema,
   outputSchema: OutputStringJsonSchema,
 } satisfies z.infer<typeof ToolSchema>;
@@ -164,7 +166,7 @@ const killTripTool = {
 // Define sober_thinking tool registration
 const soberThinkingTool = {
   name: 'sober_thinking',
-  description: 'Reads .env file variables (truncated/omitted values), and fully reads README.md and CHANGELOG/CHANGELOG.md for the agent.',
+  description: 'Reads .env, README.md, and CHANGELOG files to get grounded information about the project. Use this tool when the user says phrases like "sober up!", "get back to reality", "check the facts", or asks for current project status. Also use this tool if the user seems upset or is questioning what the agent is doing.',
   inputSchema: { type: 'object', properties: {}, required: [] },
   outputSchema: {
     type: 'object',

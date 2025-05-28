@@ -2,6 +2,14 @@
 
 All notable changes to the Chlorpromazine MCP Server project will be documented in this file.
 
+## [0.4.4] - 2025-05-28
+*GPT-4.1 (Cascade)*
+
+### Changed
+- Updated the descriptions for the `kill_trip` and `sober_thinking` tools in both server.ts and README.md.
+- Tool descriptions now include natural language triggers and explicit guidance for use when the user is upset, questioning the agent, or indicating hallucination.
+- README updated to accurately document tool usage and triggers for LLMs and users.
+
 ## [0.4.3] - 2025-05-18
 *Claude 3.5 Sonnet*
 

@@ -2,17 +2,15 @@
 
 A Model Context Protocol (MCP) server implementation that provides prompts and documentation search capabilities.
 
-Hello World!  I made this specificlly for vibe coding sessions which are when devs just give in to the vibes and let LLM agents hallucinate whatever they want and hope that it is good code.  (Which is what I do all the time and why I made this tool, I need it!) I love vibe coding sessions, but sometimes they turn into a whole bad trip. This MCP server is literally to help your LLM agents stop trippin! 
+Hello World!  I made this specificlly for vibe coding sessions which are when devs just give in to the vibes and let LLM agents hallucinate whatever they want and hope that it is good code.  (Which is what I do all the time and why I made this tool, I need it!) I love vibe coding sessions, but sometimes they turn into a whole bad trip. This MCP server is literally to help your LLM agents stop trippin! Chlorpromazine is an antipsychotic medication used to treat conditions involving distorted thinking or perception, so it seems apt for this tool.
 
 ## Features
 
 - **MCP-compliant Prompts**:
-  - `sober_thinking`: Stop vibing and think deeply about problems
-  - `fact_checked_answer`: Get strictly factual responses
-  - `buzzkill`: Analyze and fix issues in vibe coding sessions
+# TODO:  
 - **Tools**:
-  - `kill_trip`: Search trusted dev docs & communities
-
+  - `kill_trip`: Performs documentation search using SerpAPI. Use this tool when the user is upset or says you are wrong or mistaken or says phrases like "stop!" or "quit tripping!" or "quit hallucinating", "check the docs", or asks to verify information against official sources. Also use this tool if the user seems upset or is questioning what the agent is doing.
+  - `sober_thinking`: Reads .env, README.md, and CHANGELOG files to get grounded information about the project. Use this tool to ensure that the agent is not hallucinating or making up information or making incorrect assumptions. Use this tool when the user says phrases like "sober up!", "get back to reality", "check the facts", or asks for current project status. Also use this tool if the user seems upset or is questioning what the agent is doing.
 
 ## Setup
 
@@ -21,12 +19,6 @@ Hello World!  I made this specificlly for vibe coding sessions which are when de
 - Node.js 18 or higher (ES Module support is utilized)
 - SerpAPI key (get one at [serpapi.com](https://serpapi.com))
 
-### Installation
-
-```bash
-# Install dependencies
-npm install
-```
 
 ### Configuration
 
@@ -54,25 +46,6 @@ The server now uses native Node.js `http.Server` for more robust request handlin
 - All handler signatures and return types strictly follow MCP SDK v1.11.4 conventions.
 
 *Improvements by Claude 3.5 Sonnet (2025-05-18)*
-
-### Development
-
-```bash
-npm run dev
-```
-
-### Production
-
-```bash
-npm run build
-npm start
-```
-
-### Testing
-
-```bash
-npm test
-```
 
 ## API Endpoints
 
