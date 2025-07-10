@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/82deutschmark-chlorpromazine-mcp-badge.png)](https://mseep.ai/app/82deutschmark-chlorpromazine-mcp)
+
 # Chlorpromazine MCP Server aka Buzz Killington the Trip Killer
 
 A Model Context Protocol (MCP) server implementation that provides prompts and documentation search capabilities.
