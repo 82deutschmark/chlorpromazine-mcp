@@ -77,7 +77,6 @@ export function registerToolHandlers(
         const duration = Date.now() - startTime;
         
         logger.info('Tool execution completed', {
-          requestId: request.id,
           toolName: params.name,
           toolRunId: params.toolRunId,
           success: !result.isError,
@@ -91,7 +90,6 @@ export function registerToolHandlers(
         const errorMessage = sanitizeErrorMessage(error, config.isProduction);
         
         logger.error('Tool execution failed', {
-          requestId: request.id,
           toolName: params.name,
           toolRunId: params.toolRunId,
           error: errorMessage,

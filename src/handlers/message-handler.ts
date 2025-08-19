@@ -26,7 +26,6 @@ export function registerMessageHandler(
       const startTime = Date.now();
       
       logger.info('Handling sampling/createMessage request', {
-        requestId: request.id,
         model: params.model,
         messagesCount: params.messages?.length || 0
       });
@@ -87,7 +86,6 @@ How can I help you stay grounded in facts today?`;
         const duration = Date.now() - startTime;
         
         logger.info('Message creation completed', {
-          requestId: request.id,
           model: params.model,
           responseLength: responseText.length,
           durationMs: duration
@@ -104,7 +102,6 @@ How can I help you stay grounded in facts today?`;
         const errorMessage = sanitizeErrorMessage(error, config.isProduction);
         
         logger.error('Message creation failed', {
-          requestId: request.id,
           model: params.model,
           error: errorMessage,
           durationMs: duration

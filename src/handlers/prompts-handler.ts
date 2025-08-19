@@ -25,7 +25,6 @@ export function registerPromptHandlers(
     ListPromptsRequestSchema,
     async (request): Promise<ListPromptsResult> => {
       logger.info('Handling prompts/list request', { 
-        requestId: request.id,
         params: request.params 
       });
       
@@ -47,7 +46,6 @@ export function registerPromptHandlers(
       const startTime = Date.now();
       
       logger.info('Handling prompts/get request', {
-        requestId: request.id,
         promptName: params.name,
         hasArguments: !!params.arguments && Object.keys(params.arguments).length > 0
       });
@@ -66,7 +64,6 @@ export function registerPromptHandlers(
         const duration = Date.now() - startTime;
         
         logger.info('Prompt rendering completed', {
-          requestId: request.id,
           promptName: params.name,
           messagesCount: result.messages.length,
           durationMs: duration
@@ -79,7 +76,6 @@ export function registerPromptHandlers(
         const errorMessage = sanitizeErrorMessage(error, config.isProduction);
         
         logger.error('Prompt rendering failed', {
-          requestId: request.id,
           promptName: params.name,
           error: errorMessage,
           durationMs: duration
