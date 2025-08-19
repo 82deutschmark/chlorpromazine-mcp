@@ -1,10 +1,10 @@
 /**
- * Chlorpromazine MCP Server - Simple Test Suite
+ * Chlorpromazine MCP Server - MCP Protocol Test Suite
  * 
- * This file implements a lightweight test suite that:
- * 1. Starts the server
- * 2. Tests all four MCP endpoints
- * 3. Asserts HTTP 200 responses with non-empty JSON fields
+ * This file implements a test suite that:
+ * 1. Starts the MCP server
+ * 2. Tests MCP JSON-RPC protocol endpoints
+ * 3. Validates proper MCP responses
  * 
  * Author: Claude
  */
@@ -30,6 +30,25 @@ function assert(condition, message) {
   console.log(`✅ PASS: ${message}`);
   testsPassed++;
   return true;
+}
+
+// MCP JSON-RPC client helper
+async function mcpCall(method, params = {}) {
+  const payload = {
+    jsonrpc: '2.0',
+    id: Math.random().toString(36).substring(7),
+    method,
+    params
+  };
+  
+  const response = await fetch(`http://localhost:${PORT}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  
+  const json = await response.json();
+  return { status: response.status, json };
 }
 
 async function fetchJSON(url, options = {}) {
@@ -75,55 +94,42 @@ await setTimeout(1000);
 console.log('Beginning tests...');
 
 try {
-  // Test 1: /healthz endpoint
+  // Test 1: Health check endpoint (REST)
   const healthCheck = await fetch(`http://localhost:${PORT}/healthz`);
   assert(healthCheck.status === 200, 'Health check endpoint returns 200');
   
-  // Test 2: /v1/prompts/list
-  const { status: promptsListStatus, json: promptsList } = await fetchJSON(`http://localhost:${PORT}/v1/prompts/list`);
-  assert(promptsListStatus === 200, 'prompts/list returns 200 status');
-  assert(promptsList && promptsList.prompts && promptsList.prompts.length > 0, 'prompts/list returns non-empty prompts array');
+  // Test 2: MCP prompts/list
+  const { status: promptsListStatus, json: promptsListResponse } = await mcpCall('prompts/list');
+  assert(promptsListStatus === 200, 'MCP prompts/list returns 200 status');
+  assert(!promptsListResponse.error, 'MCP prompts/list has no error');
+  assert(promptsListResponse.result && promptsListResponse.result.prompts && promptsListResponse.result.prompts.length > 0, 'MCP prompts/list returns non-empty prompts array');
   
-  // Test 3: /v1/prompts/get
-  const promptsGetPayload = {
+  // Test 3: MCP prompts/get
+  const { status: promptsGetStatus, json: promptsGetResponse } = await mcpCall('prompts/get', {
     name: 'sober_thinking',
     arguments: { 'QUESTION_TEXT': 'Test question' }
-  };
+  });
   
-  const { status: promptsGetStatus, json: promptsGet } = await fetchJSON(
-    `http://localhost:${PORT}/v1/prompts/get`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(promptsGetPayload)
-    }
-  );
+  assert(promptsGetStatus === 200, 'MCP prompts/get returns 200 status');
+  assert(!promptsGetResponse.error, 'MCP prompts/get has no error');
+  assert(promptsGetResponse.result && promptsGetResponse.result.messages && promptsGetResponse.result.messages.length > 0, 'MCP prompts/get returns non-empty messages array');
   
-  assert(promptsGetStatus === 200, 'prompts/get returns 200 status');
-  assert(promptsGet && promptsGet.messages && promptsGet.messages.length > 0, 'prompts/get returns non-empty messages array');
+  // Test 4: MCP tools/list
+  const { status: toolsListStatus, json: toolsListResponse } = await mcpCall('tools/list');
+  assert(toolsListStatus === 200, 'MCP tools/list returns 200 status');
+  assert(!toolsListResponse.error, 'MCP tools/list has no error');
+  assert(toolsListResponse.result && toolsListResponse.result.tools && toolsListResponse.result.tools.length > 0, 'MCP tools/list returns non-empty tools array');
   
-  // Test 4: /v1/tools/list
-  const { status: toolsListStatus, json: toolsList } = await fetchJSON(`http://localhost:${PORT}/v1/tools/list`);
-  assert(toolsListStatus === 200, 'tools/list returns 200 status');
-  assert(toolsList && toolsList.tools && toolsList.tools.length > 0, 'tools/list returns non-empty tools array');
+  // Test 5: MCP tools/call
+  const { status: toolsCallStatus, json: toolsCallResponse } = await mcpCall('tools/call', {
+    name: 'sober_thinking',
+    arguments: {},
+    toolRunId: 'test-run-' + Date.now()
+  });
   
-  // Test 5: /v1/tools/call
-  const toolsCallPayload = {
-    name: 'kill_trip',
-    arguments: { 'query': 'test query' }
-  };
-  
-  const { status: toolsCallStatus, json: toolsCall } = await fetchJSON(
-    `http://localhost:${PORT}/v1/tools/call`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(toolsCallPayload)
-    }
-  );
-  
-  assert(toolsCallStatus === 200, 'tools/call returns 200 status');
-  assert(toolsCall && toolsCall.content && toolsCall.content.length > 0, 'tools/call returns non-empty content array');
+  assert(toolsCallStatus === 200, 'MCP tools/call returns 200 status');
+  assert(!toolsCallResponse.error, 'MCP tools/call has no error');
+  assert(toolsCallResponse.result && toolsCallResponse.result.content && toolsCallResponse.result.content.length > 0, 'MCP tools/call returns non-empty content array');
   
 } catch (error) {
   console.error('Test error:', error);

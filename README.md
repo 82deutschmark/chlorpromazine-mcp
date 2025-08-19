@@ -7,7 +7,9 @@ Hello World!  I made this specificlly for vibe coding sessions which are when de
 ## Features
 
 - **MCP-compliant Prompts**:
-# TODO:  
+  - `sober_thinking`: Ground agent in project reality by reading current files (.env, README.md, CHANGELOG). Use when user says "sober up!", "get back to reality", "check the facts", or when agent needs current project status.
+  - `fact_checked_answer`: Verify answers against official documentation using SerpAPI search. Automatically searches configured documentation sites to fact-check responses.
+  - `buzzkill`: Debug systematic issues with structured analysis. Helps break down complex problems into manageable components for methodical troubleshooting.
 - **Tools**:
   - `kill_trip`: Performs documentation search using SerpAPI. Use this tool when the user is upset or says you are wrong or mistaken or says phrases like "stop!" or "quit tripping!" or "quit hallucinating", "check the docs", or asks to verify information against official sources. Also use this tool if the user seems upset or is questioning what the agent is doing.
   - `sober_thinking`: Reads .env, README.md, and CHANGELOG files to get grounded information about the project. Use this tool to ensure that the agent is not hallucinating or making up information or making incorrect assumptions. Use this tool when the user says phrases like "sober up!", "get back to reality", "check the facts", or asks for current project status. Also use this tool if the user seems upset or is questioning what the agent is doing.
@@ -47,15 +49,21 @@ The server now uses native Node.js `http.Server` for more robust request handlin
 
 *Improvements by Claude 3.5 Sonnet (2025-05-18)*
 
-## API Endpoints
+## MCP Protocol
 
-The core MCP functionality for prompts and tools is handled via the Model Context Protocol SDK. The server also provides:
+This server implements the Model Context Protocol (MCP) using JSON-RPC over HTTP. Connect MCP clients to:
 
-- `/healthz`: Health check endpoint (GET) - directly handled by the Node.js `http.Server`.
-- `/v1/prompts/list`: List available prompts (via MCP SDK)
-- `/v1/prompts/get`: Get a specific prompt (via MCP SDK)
-- `/v1/tools/list`: List available tools (via MCP SDK)
-- `/v1/tools/call`: Call a specific tool (via MCP SDK)
+**Endpoint:** `http://localhost:3000` (or your configured PORT)  
+**Protocol:** JSON-RPC 2.0
+
+**Available MCP Methods:**
+- `prompts/list`: List available prompts
+- `prompts/get`: Get a specific prompt with arguments
+- `tools/list`: List available tools  
+- `tools/call`: Execute a tool with arguments
+- `sampling/createMessage`: Generate responses using configured models
+
+**Health Check:** `GET /healthz` (REST endpoint for monitoring)
 
 ## SDK Integration Notes
 
@@ -71,10 +79,18 @@ This project is designed to be deployed on Smithery.ai:
 
 ## Security
 
-The server should not be exposed directly to the public internet without proper security measures. Use one of the following approaches:
+The server includes comprehensive security features:
 
+- **Input Sanitization**: All user inputs are validated and sanitized
+- **Rate Limiting**: Protection against abuse and DoS attacks  
+- **Timeout Protection**: Network requests have proper timeouts
+- **Secrets Masking**: Sensitive environment variables are hidden in tool outputs
+- **Error Sanitization**: Stack traces hidden in production
+
+For production deployment:
 1. Deploy behind an API gateway
 2. Enable API key authentication by setting the API_KEY environment variable
+3. Configure CORS and security headers as needed
 
 ## Author
 @82deutschmark 
