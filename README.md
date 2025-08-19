@@ -36,18 +36,37 @@ PORT=3000                            # Server port (default: 3000)
 # API_KEY=shared_secret              # Uncomment and set for API key authentication
 ```
 
-## Usage
+## Architecture
 
-The server now uses native Node.js `http.Server` for more robust request handling and lifecycle management, with the MCP transport integrated into it.
+**v0.3.0 - Completely Refactored Architecture (August 2025)**
 
-## TypeScript Safety & Handler Robustness
+The server has been completely rewritten from a 588-line monolithic file into a secure, modular architecture:
 
-- All MCP request handlers use strict parameter shapes (`(request, extra)`), always accessing `request.params` as required by the MCP SDK.
-- Defensive type guards are used for all user input derived from Zod schemas, including `params.model`, `userContent.text`, and tool arguments, to prevent `unknown` type errors and provide clear, actionable error messages.
-- The `model` field in responses is always a string, with a fallback to `DEFAULT_ASSISTANT_MODEL` if not provided or not a string.
-- All handler signatures and return types strictly follow MCP SDK v1.11.4 conventions.
+### 🏗️ **Modular Structure**
+```
+src/
+├── config/          # Environment validation and constants
+├── handlers/        # MCP protocol handlers (tools, prompts, messages)  
+├── services/        # Rate limiting, SerpAPI client, file operations
+├── tools/           # Modular tool implementations
+├── prompts/         # MCP prompt implementations
+├── types/           # Clean TypeScript definitions (no 'any' types)
+└── utils/           # Security utilities and structured logging
+```
 
-*Improvements by Claude 3.5 Sonnet (2025-05-18)*
+### 🔒 **Security Features**
+- **Input Sanitization**: All inputs validated with Zod schemas
+- **Rate Limiting**: Sliding window algorithm protects against abuse
+- **Timeout Protection**: 5-second timeouts on external API calls
+- **Secrets Masking**: Environment variables hidden in tool outputs
+- **Request Limits**: 1MB maximum request size
+- **Path Validation**: Prevents directory traversal attacks
+
+### 🎯 **Full MCP Compliance**
+- Complete JSON-RPC 2.0 implementation
+- All handlers properly registered and functional
+- Proper error handling and response formatting
+- TypeScript safety with defensive type guards
 
 ## MCP Protocol
 
@@ -92,9 +111,17 @@ For production deployment:
 2. Enable API key authentication by setting the API_KEY environment variable
 3. Configure CORS and security headers as needed
 
+## Version History
+
+- **v0.3.0** (August 19, 2025) - Complete architecture refactor by Claude Code (Claude Sonnet 4)
+  - Transformed from 588-line monolithic security risk to secure, modular system
+  - Added comprehensive security hardening and full MCP compliance
+  - Fixed critical handler registration bugs and protocol compliance issues
+
 ## Author
 @82deutschmark 
 ClaudeAI
+Claude Code (Claude Sonnet 4) - Complete v0.3.0 refactor (August 2025)
 Cascade (Gemini 2.5 Pro) - Contributed to SDK integration and ES Module refactoring.
 
 [![smithery badge](https://smithery.ai/badge/@82deutschmark/chlorpromazine-mcp)](https://smithery.ai/server/@82deutschmark/chlorpromazine-mcp)
