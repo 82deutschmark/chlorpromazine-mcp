@@ -25,7 +25,6 @@ export function registerToolHandlers(
     ListToolsRequestSchema,
     async (request): Promise<ListToolsResult> => {
       logger.info('Handling tools/list request', { 
-        requestId: request.id,
         params: request.params 
       });
       
@@ -51,7 +50,6 @@ export function registerToolHandlers(
       const rateLimitId = generateRateLimitId({ headers: {} });
       
       logger.info('Handling tools/call request', {
-        requestId: request.id,
         toolName: params.name,
         toolRunId: params.toolRunId,
         rateLimitId
