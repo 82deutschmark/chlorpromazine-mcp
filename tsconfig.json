@@ -20,6 +20,6 @@
       "./types"
     ]
   },
-  "include": ["**/*.ts", "types.d.ts"],
+  "include": ["src/**/*.ts", "server.ts", "types.d.ts"],
   "exclude": ["node_modules", "dist"]
 }

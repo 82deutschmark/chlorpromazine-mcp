@@ -2,7 +2,14 @@
   "permissions": {
     "allow": [
       "Bash(npm run build:*)",
-      "Bash(npm test)"
+      "Bash(npm test)",
+      "Bash(mkdir:*)",
+      "Bash(curl:*)",
+      "Bash(timeout 10 npm test)",
+      "Bash(timeout 5 npm start)",
+      "Bash(node:*)",
+      "Bash(SERPAPI_KEY=test_key node -e \"\nimport(''./dist/src/handlers/prompts-handler.js'')\n  .then(m => { console.log(''Prompts handler imported successfully:'', Object.keys(m)); })\n  .catch(e => { console.error(''Import failed:'', e.message); });\n\")",
+      "Bash(timeout 15 npm test)"
     ],
     "deny": [],
     "ask": []

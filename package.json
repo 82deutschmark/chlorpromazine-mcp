@@ -1,8 +1,8 @@
 {
   "name": "chlorpromazine-mcp",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Chlorpromazine Model Context Protocol (MCP) Server",
-  "main": "dist/server.js",
+  "main": "dist/src/server.js",
   "type": "module",
   "engines": {
     "node": ">=18.0.0"
@@ -11,9 +11,9 @@
     "doc": "docs"
   },
   "scripts": {
-    "dev": "tsx watch server.ts",
+    "dev": "tsx watch src/server.ts",
     "build": "tsc",
-    "start": "node dist/server.js",
+    "start": "node dist/src/server.js",
     "prepare": "npm run build",
     "test": "node test/index.js",
     "clean": "rimraf dist",
