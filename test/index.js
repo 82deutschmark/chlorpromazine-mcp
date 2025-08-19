@@ -43,7 +43,10 @@ async function mcpCall(method, params = {}) {
   
   const response = await fetch(`http://localhost:${PORT}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 
+      'Content-Type': 'application/json',
+      'Accept': 'application/json, text/event-stream'
+    },
     body: JSON.stringify(payload)
   });
   
@@ -67,7 +70,7 @@ async function fetchJSON(url, options = {}) {
 
 // Start server for testing
 console.log('Starting test server...');
-const server = spawn('node', ['dist/server.js'], {
+const server = spawn('node', ['dist/src/server.js'], {
   stdio: 'pipe',
   env: { 
     ...process.env, 

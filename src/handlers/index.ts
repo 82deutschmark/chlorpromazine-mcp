@@ -14,7 +14,6 @@ import type { ChlorpromazineRequest } from '../types/mcp-types.js';
 export function registerAllHandlers(
   server: Server<ChlorpromazineRequest, any, any>
 ): void {
-  // Register all handler types
   registerToolHandlers(server);
   registerPromptHandlers(server);
   registerMessageHandler(server);
