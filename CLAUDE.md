@@ -12,7 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run clean` - Remove dist/ directory
 
 ### Environment Setup
-Create a `.env` file with:
+A `.env` file already exists with:
 - `SERPAPI_KEY` (required) - Get from serpapi.com for documentation search
 - `SITE_FILTER` (optional) - Comma-separated list of domains to search
 - `PORT` (optional) - Server port, defaults to 3000
