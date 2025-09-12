@@ -21,6 +21,8 @@ import http from 'node:http';
 import { randomUUID } from 'node:crypto'; // Added import
 import { promises as fs } from 'node:fs'; // For sober_thinking tool (GPT-4.1)
 import { join } from 'node:path'; // For sober_thinking tool (GPT-4.1)
+import { exec } from 'node:child_process'; // For git history
+import os from 'node:os'; // For OS info
 
 // Import the MCP SDK
 import type { AuthInfo } from '@modelcontextprotocol/sdk/server/auth/types.js'; // Re-added
@@ -53,28 +55,6 @@ import {
   EmptyResultSchema,     // Corrected: Ping likely returns an empty result
 } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
-
-// Define local Zod schemas for specific tool arguments
-const KillTripArgsSchema = z.object({
-  query: z.string().describe('The search query for SerpAPI.'),
-});
-
-// Define JSON Schema objects for tool definitions (required by ToolSchema)
-const KillTripArgsJsonSchema = {
-  type: 'object' as const,
-  properties: {
-    query: { type: 'string' as const, description: 'The search query for SerpAPI.' },
-  },
-  required: ['query'],
-};
-
-const OutputStringJsonSchema = { 
-  type: 'object' as const,
-  properties: {
-    result: { type: 'string' as const, description: 'The string result of the operation.' },
-  },
-  required: ['result'],
-};
 
 // Define type aliases inferred from SDK Zod schemas
 type JSONRPCMessage = z.infer<typeof JSONRPCMessageSchema>;
@@ -136,13 +116,6 @@ const SoberThinkingArgsSchema = z.object({
   QUESTION_TEXT: z.string().min(1, 'QUESTION_TEXT cannot be empty.'),
 });
 
-interface FactCheckedAnswerArgs {
-  USER_QUERY: string;
-}
-const FactCheckedAnswerArgsSchema = z.object({
-  USER_QUERY: z.string().min(1, 'USER_QUERY cannot be empty.'),
-});
-
 interface BuzzkillArgs {
   ISSUE_DESCRIPTION: string;
   RECENT_CHANGES: string;
@@ -156,13 +129,6 @@ const BuzzkillArgsSchema = z.object({
   ACTUAL_BEHAVIOR: z.string(),
 });
 
-const killTripTool = {
-  name: 'kill_trip',
-  description: 'Performs documentation search using SerpAPI. Use this tool when the user is upset or says you are wrong or mistaken or says phrases like "stop! or "quit tripping!" or "quit hallucinating", "check the docs", or asks to verify information against official sources. Also use this tool if the user seems upset or is questioning what the agent is doing.',
-  inputSchema: KillTripArgsJsonSchema,
-  outputSchema: OutputStringJsonSchema,
-} satisfies z.infer<typeof ToolSchema>;
-
 // Define sober_thinking tool registration
 const soberThinkingTool = {
   name: 'sober_thinking',
@@ -174,24 +140,6 @@ const soberThinkingTool = {
     required: ['content']
   },
 } satisfies z.infer<typeof ToolSchema>;
-
-// Placeholder for the actual SerpAPI search function
-async function serpSearch(query: string): Promise<string> {
-  const key = process.env.SERPAPI_KEY;
-  if (!key) return 'Search disabled (SERPAPI_KEY missing)';
-
-  const sitePart = `site:(${searchSites.join(' OR ')})`;
-  const url = `https://serpapi.com/search.json?engine=google&q=${sitePart}+${encodeURIComponent(query)}&api_key=${key}`;
-  try {
-    const res = await fetch(url);
-    if (!res.ok) return `Search error ${res.status}`;
-    const data: any = await res.json();
-    const hit = data?.organic_results?.[0];
-    return hit ? `${hit.title} — ${hit.snippet} (${hit.link})` : 'No relevant information found.';
-  } catch (err: any) {
-    return `Search error: ${err.message}`;
-  }
-}
 
 const SERVER_MODEL_NAME = 'chlorpromazine-mcp'; // Define a model name
 const DEFAULT_ASSISTANT_MODEL = 'chlorpromazine-mcp/default'; // Default model for createMessage responses
@@ -287,14 +235,7 @@ function buildServer() {
       const params = request.params;
       console.log('Handling tools/list request:', params, 'with extra:', extra);
       return {
-        tools: [
-          {
-            name: killTripTool.name,
-            description: killTripTool.description,
-            inputSchema: killTripTool.inputSchema,
-            outputSchema: killTripTool.outputSchema,
-          },
-          {
+        tools: [          {
             name: soberThinkingTool.name,
             description: soberThinkingTool.description,
             inputSchema: soberThinkingTool.inputSchema,
@@ -325,6 +266,20 @@ function buildServer() {
             'CHANGELOG.md',
           ].map(f => join(cwd, f));
 
+          // Get OS Info
+          const osInfo = `OS: ${os.platform()} ${os.release()}`;
+
+          // Get Git History
+          const gitHistory = await new Promise<string>((resolve, reject) => {
+            exec('git log -n 5 --pretty=format:"%h - %an, %ar : %s"', (err, stdout) => {
+              if (err) {
+                resolve('Could not retrieve git history.');
+              } else {
+                resolve(stdout);
+              }
+            });
+          });
+
           // Helper to read .env and truncate/omit values
           async function safeReadEnv(filePath: string): Promise<string> {
             try {
@@ -341,7 +296,7 @@ function buildServer() {
           }
 
           // Read all files, with special handling for .env
-          const results = await Promise.all(
+          const fileContents = await Promise.all(
             files.map(async f => {
               const name = f.split(/[\\/]/).pop();
               if (name === '.env') {
@@ -350,12 +305,13 @@ function buildServer() {
                 try {
                   return `## ${name}\n${await fs.readFile(f, 'utf8')}\n\n`;
                 } catch {
-                  return `## ${name}\n(File not found or unreadable)\n\n`;
+                  return ``; // Don't include if not found, e.g. CHANGELOG vs CHANGELOG.md
                 }
               }
             })
           );
-          const output = results.join('\n');
+
+          const output = `## System Metadata\n${osInfo}\n\n## Recent Git History\n${gitHistory}\n\n` + fileContents.join('');
 
           return {
             toolName: params.name,
@@ -379,58 +335,7 @@ function buildServer() {
           } satisfies SdkCallToolResult;
         }
       }
-
-      // Per MCP SDK, the tool name is in params.name
-      if (params.name === 'kill_trip') {
-        const validationResult = KillTripArgsSchema.safeParse(params.input);
-        if (!validationResult.success) {
-          const errorMsg = `Invalid input: ${validationResult.error.message}`;
-          console.error('Invalid input for kill_trip:', validationResult.error);
-          return {
-            toolName: params.name,
-            toolRunId: params.toolRunId,
-            isError: true,
-            error: errorMsg,
-            content: [{ type: 'text', text: errorMsg }],
-            structuredContent: {},
-          } satisfies SdkCallToolResult;
-        }
-        // Defensive type guard for query
-        const { query } = validationResult.data as { query: unknown };
-        if (typeof query !== 'string') {
-          const errorMsg = 'Invalid input: query must be a string';
-          return {
-            toolName: params.name,
-            toolRunId: params.toolRunId,
-            isError: true,
-            error: errorMsg,
-            content: [{ type: 'text', text: errorMsg }],
-            structuredContent: {},
-          } satisfies SdkCallToolResult;
-        }
-        try {
-          const searchResultString = await serpSearch(query);
-          console.log(`SerpAPI search result for query "${query}": ${searchResultString}`);
-          return {
-            toolName: params.name,
-            toolRunId: params.toolRunId,
-            isError: false,
-            content: [{ type: 'text', text: searchResultString }],
-            structuredContent: { result: searchResultString },
-          } satisfies SdkCallToolResult;
-        } catch (e: any) {
-          const errorMsg = e.message || 'SerpAPI search failed.';
-          console.error(`Error during SerpAPI search for query "${query}":`, e);
-          return {
-            toolName: params.name,
-            toolRunId: params.toolRunId,
-            isError: true,
-            error: errorMsg,
-            content: [{ type: 'text', text: errorMsg }],
-            structuredContent: {},
-          } satisfies SdkCallToolResult;
-        }
-      } else {
+      else {
         const errorMsg = `Tool '${params.name}' not found.`;
         console.error(errorMsg);
         return {
@@ -451,40 +356,8 @@ function buildServer() {
 // --------------------------------------------------------------------
 // Constants & helpers
 // --------------------------------------------------------------------
-const DEFAULT_SITES = [
-  'stackoverflow.com',
-  'stackexchange.com',
-  'reddit.com',
-  'github.com',
-  'docs.python.org',
-  'docs.oracle.com',
-  'learn.microsoft.com',
-  'developer.mozilla.org',
-  'kotlinlang.org',
-  'go.dev',
-  'rust-lang.org',
-  'docs.ruby-lang.org',
-  'nodejs.org',
-  'pypi.org',
-  'maven.apache.org',
-  'platform.openai.com',
-  'docs.anthropic.com',
-  'ai.google.dev',
-  'platform.openai.com/docs',
-  'platform.openai.com/api-reference',
-  'docs.anthropic.com/claude',
-  'ai.google.dev/gemini',
-  'modelcontextprotocol.io',
-  'modelcontextprotocol.io/tutorials',
-  'modelcontextprotocol.io/docs',
-  'modelcontextprotocol.io/examples'
-];
-
 const PORT = Number(process.env.PORT) || 3000;
 const API_KEY = process.env.API_KEY ?? null;
-const searchSites = (process.env.SITE_FILTER ?? '').split(',').map(s => s.trim()).filter(Boolean).length
-  ? (process.env.SITE_FILTER as string).split(',').map(s => s.trim())
-  : DEFAULT_SITES;
 
 function log(level: 'debug' | 'info' | 'warn' | 'error', msg: string, meta: Record<string, unknown> = {}): void {
   console.log(JSON.stringify({ ts: new Date().toISOString(), level, msg, ...meta }));
@@ -561,9 +434,9 @@ async function main() {
     // We can list what's registered via setRequestHandler if the server instance exposes it,
     // or just log our intended setup.
     log('info', 'Registered MCP Methods:');
-    log('info', '  - sampling/createMessage (handles models: sober_thinking, fact_checked_answer, buzzkill)');
-    log('info', '  - tools/call (handles tool: kill_trip)');
-    log('info', '  - tools/list (lists tool: kill_trip)');
+    log('info', '  - sampling/createMessage (handles models: sober_thinking, buzzkill)');
+    log('info', '  - tools/call (handles tool: sober_thinking)');
+    log('info', '  - tools/list (lists tool: sober_thinking)');
   });
 
   // Graceful shutdown

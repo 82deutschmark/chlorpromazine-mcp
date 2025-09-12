@@ -18,7 +18,7 @@ Replace the current `fact_checked_answer` prompt with a more robust `sober_up` f
 - [ ] Validate network/proxy settings if applicable
 
 ### 2. Project Configuration
-- [ ] Verify deployment target (Cloudflare or Vercel, NEVER Netlify)
+- [ ] Verify deployment target (Railway, Cloudflare or Vercel, NEVER Netlify)
 - [ ] Check project dependencies and versions
 - [ ] Validate project structure
 - [ ] Verify configuration files (.env, etc.)
@@ -79,8 +79,8 @@ case 'sober_up':
         content: { 
           type: 'text', 
           text: `You are running in a Windows environment. 
-                 This project uses Cloudflare for deployment, not Netlify.
-                 Always use Windows-style paths (backslashes) and commands.
+                 This project uses Railway for deployment.
+                 Always use Windows-style paths (backslashes) and commands, never && or ||.
                  Current project structure: ${JSON.stringify(getProjectStructure(), null, 2)}`
         } 
       },

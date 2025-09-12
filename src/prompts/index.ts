@@ -3,7 +3,6 @@
  */
 
 import { soberThinkingPrompt } from './sober-thinking.js';
-import { factCheckedAnswerPrompt } from './fact-checked-answer.js';
 import { buzzkillPrompt } from './buzzkill.js';
 import type { GetPromptResult } from '../types/mcp-types.js';
 
@@ -18,7 +17,6 @@ export interface PromptHandler {
 // Prompt registry mapping
 export const promptRegistry = new Map<string, PromptHandler>([
   ['sober_thinking', soberThinkingPrompt],
-  ['fact_checked_answer', factCheckedAnswerPrompt],
   ['buzzkill', buzzkillPrompt],
 ]);
 
@@ -28,11 +26,6 @@ export const promptDefinitions = [
     name: soberThinkingPrompt.name,
     description: soberThinkingPrompt.description,
     arguments: soberThinkingPrompt.arguments,
-  },
-  {
-    name: factCheckedAnswerPrompt.name,
-    description: factCheckedAnswerPrompt.description,
-    arguments: factCheckedAnswerPrompt.arguments,
   },
   {
     name: buzzkillPrompt.name,
@@ -59,6 +52,5 @@ export function getPromptNames(): string[] {
 // Re-export individual prompts for convenience
 export {
   soberThinkingPrompt,
-  factCheckedAnswerPrompt,
   buzzkillPrompt,
 };
