@@ -4,6 +4,7 @@
 
 import { killTripDefinition, executeKillTrip } from './kill-trip/index.js';
 import { soberThinkingDefinition, executeSoberThinking } from './sober-thinking/index.js';
+import { braveSearchDefinition, executeBraveSearch } from './brave-search/index.js';
 import type { ToolCallParams, ToolCallResult, Tool } from '../types/mcp-types.js';
 
 // Tool registry interface
@@ -15,12 +16,14 @@ export interface ToolExecutor {
 export const toolRegistry = new Map<string, ToolExecutor>([
   ['kill_trip', executeKillTrip],
   ['sober_thinking', executeSoberThinking],
+  ['brave_search', executeBraveSearch],
 ]);
 
 // Tool definitions for MCP registration
 export const toolDefinitions: Tool[] = [
   killTripDefinition,
   soberThinkingDefinition,
+  braveSearchDefinition,
 ];
 
 // Get tool executor by name
@@ -44,4 +47,6 @@ export {
   executeKillTrip,
   soberThinkingDefinition,
   executeSoberThinking,
+  braveSearchDefinition,
+  executeBraveSearch,
 };

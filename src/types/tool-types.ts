@@ -72,6 +72,73 @@ export const SoberThinkingResultJsonSchema = {
   required: ['content'],
 };
 
+// Brave Search Tool Types
+export const BraveSearchArgsSchema = z.object({
+  query: z.string().min(1, 'Query cannot be empty').max(500, 'Query too long').describe('Search query string'),
+  count: z.number().int().min(1).max(10).default(5).describe('Number of results to return'),
+});
+
+export type BraveSearchArgs = z.infer<typeof BraveSearchArgsSchema>;
+
+export const BraveSearchResultSchema = z.object({
+  results: z.array(z.object({
+    title: z.string(),
+    url: z.string(),
+    snippet: z.string(),
+  })).describe('Array of search results'),
+  query: z.string().describe('The search query used'),
+  resultCount: z.number().describe('Number of results returned'),
+});
+
+export type BraveSearchResult = z.infer<typeof BraveSearchResultSchema>;
+
+// JSON Schema definitions for MCP tool registration
+export const BraveSearchArgsJsonSchema = {
+  type: 'object' as const,
+  properties: {
+    query: { 
+      type: 'string' as const, 
+      description: 'Search query string (what to search for)',
+      minLength: 1,
+      maxLength: 500
+    },
+    count: {
+      type: 'number' as const,
+      description: 'Number of results to return (1-10, default: 5)',
+      minimum: 1,
+      maximum: 10,
+    }
+  },
+  required: ['query'],
+};
+
+export const BraveSearchResultJsonSchema = {
+  type: 'object' as const,
+  properties: {
+    results: {
+      type: 'array' as const,
+      description: 'Array of search results',
+      items: {
+        type: 'object' as const,
+        properties: {
+          title: { type: 'string' as const },
+          url: { type: 'string' as const },
+          snippet: { type: 'string' as const }
+        }
+      }
+    },
+    query: { 
+      type: 'string' as const, 
+      description: 'The search query used' 
+    },
+    resultCount: { 
+      type: 'number' as const, 
+      description: 'Number of results returned' 
+    },
+  },
+  required: ['results', 'query', 'resultCount'],
+};
+
 // Tool registration interfaces
 export interface ToolDefinition {
   name: string;

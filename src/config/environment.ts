@@ -7,6 +7,7 @@ import { DEFAULT_SITES } from './constants.js';
 
 const EnvironmentSchema = z.object({
   SERPAPI_KEY: z.string().min(1, 'SERPAPI_KEY is required'),
+  BRAVE_SEARCH_API_KEY: z.string().optional(),
   PORT: z.string().regex(/^\d+$/, 'PORT must be a number').optional(),
   API_KEY: z.string().optional(),
   SITE_FILTER: z.string().optional(),
@@ -46,6 +47,7 @@ const env = validateEnvironment();
 
 export const config = {
   serpApiKey: env.SERPAPI_KEY,
+  braveSearchApiKey: env.BRAVE_SEARCH_API_KEY || null,
   port: parseInt(env.PORT || '3000'),
   apiKey: env.API_KEY || null,
   siteFilter: parseCommaSeparated(env.SITE_FILTER),
