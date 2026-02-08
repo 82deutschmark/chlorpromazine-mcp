@@ -40,17 +40,8 @@ function createServer(): Server<ChlorpromazineRequest, ChlorpromazineNotificatio
     {
       capabilities: {
         experimental: {},
-        sampling: {
-          createMessage: true,
-        },
-        tools: {
-          list: true,
-          call: true,
-        },
-        prompts: {
-          list: true,
-          get: true,
-        },
+        tools: {},
+        prompts: {},
       },
     }
   );

@@ -26,7 +26,6 @@ export function registerMessageHandler(
       const startTime = Date.now();
       
       logger.info('Handling sampling/createMessage request', {
-        model: params.model,
         messagesCount: params.messages?.length || 0
       });
       
@@ -42,32 +41,26 @@ export function registerMessageHandler(
 
         let responseText = "I'm sorry, I didn't understand that.";
 
-        if (lastUserMessage && lastUserMessage.content) {
-          const userContent = lastUserMessage.content;
+        if (lastUserMessage && lastUserMessage.content && Array.isArray(lastUserMessage.content)) {
+          // Content is now an array of content parts
+          const textContent = lastUserMessage.content.find(c => c.type === 'text');
           
-          if (userContent.type === 'text') {
+          if (textContent && textContent.type === 'text') {
             // Defensive type guard for safety
-            if (typeof userContent.text !== 'string') {
+            if (typeof textContent.text !== 'string') {
               throw new Error('Invalid message: text content must be a string');
             }
             
-            const userQuery = userContent.text.toLowerCase();
+            const userQuery = textContent.text.toLowerCase();
             
-            // Simple response logic based on content and model
+            // Simple response logic based on content
             if (userQuery.includes('hello') || userQuery.includes('hi')) {
               responseText = `Hello! I'm the Chlorpromazine MCP server. I can help you stop "tripping" and get grounded in reality. Use the tools available to fact-check information and stay grounded in your project.`;
             } else if (userQuery.includes('how are you')) {
               responseText = `I'm functioning well and ready to help you avoid hallucinations and stay grounded in facts. My tools can help you verify information and understand your current project state.`;
-            } else if (params.model === 'echo_bot') {
-              responseText = `Echo: ${userContent.text}`;
-            } else if (params.model === 'reverse_bot') {
-              responseText = `Reversed: ${userContent.text
-                .split('')
-                .reverse()
-                .join('')}`;
             } else {
               // Default response that explains the server's purpose
-              responseText = `I received your message about "${userContent.text}". As the Chlorpromazine MCP server, I'm designed to help you stay grounded in reality and avoid AI hallucinations.
+              responseText = `I received your message about "${textContent.text}". As the Chlorpromazine MCP server, I'm designed to help you stay grounded in reality and avoid AI hallucinations.
 
 Available tools:
 - **kill_trip**: Search official documentation when you need to verify information
@@ -86,13 +79,12 @@ How can I help you stay grounded in facts today?`;
         const duration = Date.now() - startTime;
         
         logger.info('Message creation completed', {
-          model: params.model,
           responseLength: responseText.length,
           durationMs: duration
         });
 
         return {
-          model: typeof params.model === 'string' ? params.model : DEFAULT_ASSISTANT_MODEL,
+          model: DEFAULT_ASSISTANT_MODEL,
           role: 'assistant',
           content: { type: 'text', text: responseText } as TextContent,
         };
@@ -102,14 +94,13 @@ How can I help you stay grounded in facts today?`;
         const errorMessage = sanitizeErrorMessage(error, config.isProduction);
         
         logger.error('Message creation failed', {
-          model: params.model,
           error: errorMessage,
           durationMs: duration
         });
         
         // Return a valid response even for errors
         return {
-          model: typeof params.model === 'string' ? params.model : DEFAULT_ASSISTANT_MODEL,
+          model: DEFAULT_ASSISTANT_MODEL,
           role: 'assistant',
           content: { 
             type: 'text', 

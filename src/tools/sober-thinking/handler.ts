@@ -18,10 +18,9 @@ export async function executeSoberThinking(
   
   try {
     // Validate input (even though no args are required, we still validate the structure)
-    const args = validateToolInput(soberThinkingArgsValidator, params.input) as SoberThinkingArgs;
+    const args = validateToolInput(soberThinkingArgsValidator, params.arguments) as SoberThinkingArgs;
     
     logger.info('Sober thinking tool execution started', { 
-      toolRunId: params.toolRunId,
       rateLimitId: context.rateLimitId
     });
     
@@ -30,14 +29,11 @@ export async function executeSoberThinking(
     const duration = Date.now() - startTime;
     
     logger.info('Sober thinking tool execution completed', {
-      toolRunId: params.toolRunId,
       durationMs: duration,
       contentLength: fileContents.length
     });
     
     return {
-      toolName: params.name,
-      toolRunId: params.toolRunId,
       isError: false,
       content: [{ type: 'text', text: fileContents }],
       structuredContent: { content: fileContents },
@@ -48,18 +44,13 @@ export async function executeSoberThinking(
     const errorMessage = sanitizeErrorMessage(error, config.isProduction);
     
     logger.error('Sober thinking tool execution failed', {
-      toolRunId: params.toolRunId,
       error: errorMessage,
       durationMs: duration
     });
     
     return {
-      toolName: params.name,
-      toolRunId: params.toolRunId,
       isError: true,
-      error: errorMessage,
       content: [{ type: 'text', text: errorMessage }],
-      structuredContent: { error: errorMessage },
     };
   }
 }
