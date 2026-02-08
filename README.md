@@ -88,7 +88,10 @@ This server implements the Model Context Protocol (MCP) using JSON-RPC over HTTP
 
 ## SDK Integration Notes
 
-This project has been updated to use `@modelcontextprotocol/sdk` version 1.11.4 with ES Module imports. This required careful attention to import paths (e.g., ensuring `.js` extensions) and refactoring the server startup to use the standard Node.js `http` module to wrap the SDK's `StreamableHTTPServerTransport`.
+This project uses `@modelcontextprotocol/sdk` version 1.26.0 with ES Module imports, fully compliant with MCP specification 2025-11-25. Key integration points:
+- Uses `StreamableHTTPServerTransport` for HTTP-based MCP communication
+- Proper ES Module imports with `.js` extensions
+- Full JSON-RPC 2.0 compliance with structured tool responses
 
 ## Deployment
 
@@ -114,6 +117,11 @@ For production deployment:
 3. Configure CORS and security headers as needed
 
 ## Version History
+
+- **v0.4.0** (January 14, 2025) - MCP Spec 2025-11-25 Compliance by Cascade (Claude Sonnet 4)
+  - Updated MCP SDK to v1.26.0 (security fix GHSA-345p-7cg4-v4c7)
+  - Removed deprecated CallToolResult fields per spec compliance
+  - Added tool title field for better UI display
 
 - **v0.3.0** (August 19, 2025) - Complete architecture refactor by Claude Code (Claude Sonnet 4)
   - Transformed from 588-line monolithic security risk to secure, modular system

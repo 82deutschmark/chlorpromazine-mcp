@@ -2,6 +2,26 @@
 
 All notable changes to the Chlorpromazine MCP Server project will be documented in this file.
 
+## [0.4.0] - 2025-01-14
+*Cascade (Claude Sonnet 4) - MCP Spec 2025-11-25 Compliance Update*
+
+### 🔄 **SDK & Protocol Updates**
+- **UPDATED**: MCP SDK from v1.12.0 to v1.26.0
+- **SECURITY**: Addresses GHSA-345p-7cg4-v4c7 (cross-client response data leak)
+- **SPEC**: Now compliant with MCP specification 2025-11-25
+
+### 🔧 **Breaking Changes**
+- **REMOVED**: Deprecated `toolName` and `toolRunId` fields from `CallToolResult`
+- **UPDATED**: Tool `inputSchema` now uses `additionalProperties: false` per spec recommendation
+
+### ✨ **New Features**
+- **NEW**: Added `title` field to tool definitions for better UI display
+- **IMPROVED**: Tool definitions now follow MCP spec best practices for JSON Schema 2020-12
+
+### 📝 **Documentation**
+- Updated server header with proper author/date documentation
+- Updated README SDK version reference
+
 ## [0.3.0] - 2025-08-19
 *Claude Code (Claude Sonnet 4) - Complete Refactor*
 

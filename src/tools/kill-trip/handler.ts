@@ -18,10 +18,9 @@ export async function executeKillTrip(
   
   try {
     // Validate input
-    const args = validateToolInput(killTripArgsValidator, params.input) as KillTripArgs;
+    const args = validateToolInput(killTripArgsValidator, params.arguments) as KillTripArgs;
     
     logger.info('Kill trip tool execution started', { 
-      toolRunId: params.toolRunId,
       query: args.query,
       rateLimitId: context.rateLimitId
     });
@@ -32,12 +31,8 @@ export async function executeKillTrip(
       logger.warn(errorMsg);
       
       return {
-        toolName: params.name,
-        toolRunId: params.toolRunId,
         isError: true,
-        error: errorMsg,
         content: [{ type: 'text', text: errorMsg }],
-        structuredContent: { error: errorMsg },
       };
     }
     
@@ -46,14 +41,11 @@ export async function executeKillTrip(
     const duration = Date.now() - startTime;
     
     logger.info('Kill trip tool execution completed', {
-      toolRunId: params.toolRunId,
       durationMs: duration,
       hasResult: !!searchResult
     });
     
     return {
-      toolName: params.name,
-      toolRunId: params.toolRunId,
       isError: false,
       content: [{ type: 'text', text: searchResult }],
       structuredContent: { result: searchResult },
@@ -64,18 +56,13 @@ export async function executeKillTrip(
     const errorMessage = sanitizeErrorMessage(error, config.isProduction);
     
     logger.error('Kill trip tool execution failed', {
-      toolRunId: params.toolRunId,
       error: errorMessage,
       durationMs: duration
     });
     
     return {
-      toolName: params.name,
-      toolRunId: params.toolRunId,
       isError: true,
-      error: errorMessage,
       content: [{ type: 'text', text: errorMessage }],
-      structuredContent: { error: errorMessage },
     };
   }
 }

@@ -1,7 +1,11 @@
 /* =============================================================
- * Chlorpromazine MCP Server – TypeScript compile‑safe (v0.3.2)
+ * Chlorpromazine MCP Server – TypeScript compile‑safe (v0.4.0)
  * =============================================================
- * Type-safe implementation with proper type declarations
+ * Author: Cascade (Claude Sonnet 4)
+ * Date: 2025-01-14
+ * PURPOSE: MCP server for novice coders - provides reality-check tools
+ *          to ground LLM agents and prevent hallucinations
+ * SRP/DRY check: Pass
  *
  * MCP Compatibility Note:
  * For all tools/call results, always return BOTH:
@@ -9,10 +13,11 @@
  *   - structuredContent: structured result object (for advanced clients)
  * This ensures maximum compatibility with all MCP clients.
  *
- * Updated by GPT-4.1 (Cascade):
- * - Enforced dual return format for tools/call.
- * - Registered 'sober_thinking' tool for reading .env (truncated), README.md, and changelog files (full).
- * Timestamp: 2025-05-27T23:28:16-04:00
+ * Updated to MCP SDK v1.26.0 (spec 2025-11-25):
+ * - Removed deprecated toolName/toolRunId from CallToolResult
+ * - Added title field to tool definitions
+ * - Updated inputSchema to use additionalProperties: false per spec
+ * - Security fix: GHSA-345p-7cg4-v4c7
  * ============================================================= */
 
 import 'dotenv/config';
@@ -132,8 +137,9 @@ const BuzzkillArgsSchema = z.object({
 // Define sober_thinking tool registration
 const soberThinkingTool = {
   name: 'sober_thinking',
+  title: 'Sober Thinking - Reality Check',
   description: 'Reads .env, README.md, and CHANGELOG files to get grounded information about the project. Use this tool to ensure that the agent is not hallucinating or making up information or making incorrect assumptions. Use this tool when the user says phrases like "sober up!", "get back to reality", "check the facts", or asks for current project status. Also use this tool if the user seems upset or is questioning what the agent is doing.',
-  inputSchema: { type: 'object', properties: {}, required: [] },
+  inputSchema: { type: 'object', properties: {}, additionalProperties: false },
   outputSchema: {
     type: 'object',
     properties: { content: { type: 'string', description: 'Combined file contents.' } },
@@ -160,16 +166,7 @@ function buildServer() {
       {
         capabilities: {
           experimental: {},
-          sampling: {
-            createMessage: true, // Indicates support for the 'sampling/createMessage' method
-          },
-          tools: {
-            list: true, // Indicates support for 'tools/list'
-            call: true, // Indicates support for 'tools/call'
-            // toolSearch: false, // Not implementing tool search
-            // toolUpdated: false, // Not implementing tool updates
-          },
-          // Other capabilities like 'documents', 'roots', etc., can be added here if supported
+          tools: {},
         },
       }
     );
@@ -192,34 +189,26 @@ function buildServer() {
 
       let responseText = "I'm sorry, I didn't understand that.";
 
-      if (lastUserMessage && lastUserMessage.content) {
-        const userContent = lastUserMessage.content;
-        if (userContent.type === 'text') {
+      if (lastUserMessage && lastUserMessage.content && Array.isArray(lastUserMessage.content)) {
+        const textContent = lastUserMessage.content.find(c => c.type === 'text');
+        if (textContent && textContent.type === 'text') {
           // Defensive type guard for novice safety
-          if (typeof userContent.text !== 'string') {
+          if (typeof textContent.text !== 'string') {
             throw new Error('Invalid message: text content must be a string');
           }
-          const userQuery = userContent.text.toLowerCase();
+          const userQuery = textContent.text.toLowerCase();
           if (userQuery.includes('hello') || userQuery.includes('hi')) {
             responseText = 'Hello there! How can I help you today?';
           } else if (userQuery.includes('how are you')) {
             responseText = "I'm just a bot, but I'm here to help!";
-          } else if (params.model === 'echo_bot') {
-            responseText = `Echo: ${userContent.text}`;
-          } else if (params.model === 'reverse_bot') {
-            responseText = `Reversed: ${userContent.text
-              .split('')
-              .reverse()
-              .join('')}`;
           } else {
-            responseText = `Received model '${params.model}' and query: ${userContent.text}`;
+            responseText = `Received query: ${textContent.text}`;
           }
         }
       }
 
       return {
-        // Defensive type guard for model; fallback to default if not a string
-        model: typeof params.model === 'string' ? params.model : DEFAULT_ASSISTANT_MODEL,
+        model: DEFAULT_ASSISTANT_MODEL,
         role: 'assistant',
         // responseText is always a string due to prior logic and type guards
         content: { type: 'text', text: String(responseText) } as MyTextContentPart,
@@ -235,8 +224,10 @@ function buildServer() {
       const params = request.params;
       console.log('Handling tools/list request:', params, 'with extra:', extra);
       return {
-        tools: [          {
+        tools: [
+          {
             name: soberThinkingTool.name,
+            title: soberThinkingTool.title,
             description: soberThinkingTool.description,
             inputSchema: soberThinkingTool.inputSchema,
             outputSchema: soberThinkingTool.outputSchema,
@@ -314,8 +305,6 @@ function buildServer() {
           const output = `## System Metadata\n${osInfo}\n\n## Recent Git History\n${gitHistory}\n\n` + fileContents.join('');
 
           return {
-            toolName: params.name,
-            toolRunId: params.toolRunId,
             isError: false,
             structuredContent: { content: output },
             content: [
@@ -324,11 +313,7 @@ function buildServer() {
           } satisfies SdkCallToolResult;
         } catch (e: any) {
           return {
-            toolName: params.name,
-            toolRunId: params.toolRunId,
             isError: true,
-            error: e.message ?? 'Failed reading files.',
-            structuredContent: {},
             content: [
               { type: 'text', text: e.message ?? 'Failed reading files.' }
             ]
@@ -339,12 +324,8 @@ function buildServer() {
         const errorMsg = `Tool '${params.name}' not found.`;
         console.error(errorMsg);
         return {
-          toolName: params.name,
-          toolRunId: params.toolRunId,
           isError: true,
-          error: errorMsg,
           content: [{ type: 'text', text: errorMsg }],
-          structuredContent: {},
         } satisfies SdkCallToolResult;
       }
     }

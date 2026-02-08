@@ -51,7 +51,6 @@ export function registerToolHandlers(
       
       logger.info('Handling tools/call request', {
         toolName: params.name,
-        toolRunId: params.toolRunId,
         rateLimitId
       });
       
@@ -63,12 +62,8 @@ export function registerToolHandlers(
           logger.warn(errorMsg, { availableTools: Array.from(toolDefinitions.map(t => t.name)) });
           
           return {
-            toolName: params.name,
-            toolRunId: params.toolRunId,
             isError: true,
-            error: errorMsg,
             content: [{ type: 'text', text: errorMsg }],
-            structuredContent: { error: errorMsg },
           };
         }
         
@@ -78,7 +73,6 @@ export function registerToolHandlers(
         
         logger.info('Tool execution completed', {
           toolName: params.name,
-          toolRunId: params.toolRunId,
           success: !result.isError,
           durationMs: duration
         });
@@ -91,18 +85,13 @@ export function registerToolHandlers(
         
         logger.error('Tool execution failed', {
           toolName: params.name,
-          toolRunId: params.toolRunId,
           error: errorMessage,
           durationMs: duration
         });
         
         return {
-          toolName: params.name,
-          toolRunId: params.toolRunId,
           isError: true,
-          error: errorMessage,
           content: [{ type: 'text', text: errorMessage }],
-          structuredContent: { error: errorMessage },
         };
       }
     }
