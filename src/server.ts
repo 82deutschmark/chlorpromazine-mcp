@@ -1,314 +1,235 @@
 /**
- * Chlorpromazine MCP Server - Modular Implementation (v0.3.0)
+ * Chlorpromazine MCP Server - Modern Implementation (v0.4.0)
  * 
- * A secure, modular Model Context Protocol server that helps prevent
- * LLM agents from "hallucinating" by providing grounding tools and prompts.
+ * A secure, high-level Model Context Protocol server using registerTool/registerPrompt.
  */
 
 import 'dotenv/config';
-import type { IncomingMessage, ServerResponse } from 'http';
-import http from 'node:http';
-import { randomUUID } from 'node:crypto';
-
-// MCP SDK imports
-import type { AuthInfo } from '@modelcontextprotocol/sdk/server/auth/types.js';
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import {
-  StreamableHTTPServerTransport,
-  type StreamableHTTPServerTransportOptions,
-} from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
+import express from 'express';
+import type { Request, Response } from 'express';
+import { z } from 'zod';
 
 // Application imports
 import { config } from './config/environment.js';
 import { SERVER_INFO } from './config/constants.js';
 import { logger } from './utils/logger.js';
-import { registerAllHandlers } from './handlers/index.js';
-import { rateLimiter } from './services/rate-limiter.js';
 import { serpApiClient } from './services/serpapi.js';
-import type { ChlorpromazineRequest, ChlorpromazineResult, ChlorpromazineNotification } from './types/mcp-types.js';
-import type { HealthStatus } from './types/app-types.js';
 
-/**
- * Create and configure the MCP server instance
- */
-function createServer(): Server<ChlorpromazineRequest, ChlorpromazineNotification, ChlorpromazineResult> {
-  const server = new Server<ChlorpromazineRequest, ChlorpromazineNotification, ChlorpromazineResult>(
-    {
-      name: SERVER_INFO.name,
-      version: SERVER_INFO.version,
-    },
-    {
-      capabilities: {
-        experimental: {},
-        tools: {},
-        prompts: {},
-      },
-    }
-  );
+// Tool executors
+import { executeKillTrip } from './tools/kill-trip/index.js';
+import { executeSoberThinking } from './tools/sober-thinking/index.js';
+import { executeBraveSearch } from './tools/brave-search/index.js';
 
-  // Register all MCP handlers
-  registerAllHandlers(server);
-
-  return server;
-}
-
-/**
- * Create health check response
- */
-function createHealthResponse(): HealthStatus {
-  const uptime = process.uptime();
-  
-  return {
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    version: SERVER_INFO.version,
-    uptime: Math.floor(uptime),
-    checks: {
-      serpApi: serpApiClient.isConfigured(),
-      rateLimiter: true, // Rate limiter is always available
-    }
-  };
-}
-
-/**
- * Handle HTTP requests for the server
- */
-async function handleHttpRequest(
-  req: IncomingMessage,
-  res: ServerResponse,
-  transport: StreamableHTTPServerTransport
-): Promise<void> {
-  const startTime = Date.now();
-  const method = req.method || 'UNKNOWN';
-  const url = req.url || '/';
-  
-  try {
-    // Handle health check endpoint
-    if (url === '/healthz' && method === 'GET') {
-      const health = createHealthResponse();
-      res.writeHead(200, { 
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-      });
-      res.end(JSON.stringify(health, null, 2));
-      
-      logger.request(method, url, { 
-        status: 200, 
-        durationMs: Date.now() - startTime,
-        health: health.status
-      });
-      return;
-    }
-
-    // Handle CORS preflight
-    if (method === 'OPTIONS') {
-      res.writeHead(200, {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'Access-Control-Max-Age': '86400'
-      });
-      res.end();
-      
-      logger.request(method, url, { 
-        status: 200, 
-        durationMs: Date.now() - startTime,
-        type: 'cors-preflight'
-      });
-      return;
-    }
-
-    // MCP requests are POST
-    if (method === 'POST') {
-      let body = '';
-      
-      req.on('data', chunk => {
-        body += chunk.toString();
-        
-        // Prevent huge requests
-        if (body.length > 1024 * 1024) { // 1MB limit
-          res.writeHead(413, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: 'Request too large' }));
-          logger.security('Request too large', { 
-            url, 
-            bodyLength: body.length,
-            durationMs: Date.now() - startTime
-          });
-          return;
-        }
-      });
-      
-      req.on('end', async () => {
-        try {
-          const parsedBody = JSON.parse(body);
-          
-          // Log the MCP request
-          logger.request(method, url, {
-            jsonrpc: parsedBody.jsonrpc,
-            method: parsedBody.method,
-            id: parsedBody.id,
-            bodyLength: body.length
-          });
-          
-          // Pass to the MCP transport
-          await transport.handleRequest(
-            req as IncomingMessage & { auth?: AuthInfo }, 
-            res, 
-            parsedBody
-          );
-          
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-          res.writeHead(400, { 
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-          });
-          res.end(JSON.stringify({ 
-            error: 'Invalid JSON RPC request', 
-            details: errorMessage 
-          }));
-          
-          logger.error('Invalid JSON RPC request', {
-            url,
-            error: errorMessage,
-            bodyLength: body.length,
-            durationMs: Date.now() - startTime
-          });
-        }
-      });
-      
-      return;
-    }
-
-    // Handle SSE connections for established sessions
-    if (method === 'GET' && req.headers.accept === 'text/event-stream') {
-      logger.request(method, url, { type: 'sse-connection' });
-      await transport.handleRequest(
-        req as IncomingMessage & { auth?: AuthInfo }, 
-        res
-      );
-      return;
-    }
-
-    // Method not allowed
-    res.writeHead(405, { 
-      'Content-Type': 'text/plain',
-      'Access-Control-Allow-Origin': '*'
-    });
-    res.end('Method Not Allowed');
-    
-    logger.request(method, url, { 
-      status: 405, 
-      durationMs: Date.now() - startTime 
-    });
-    
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    
-    if (!res.headersSent) {
-      res.writeHead(500, { 
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      });
-      res.end(JSON.stringify({ error: 'Internal server error' }));
-    }
-    
-    logger.error('HTTP request handler error', {
-      method,
-      url,
-      error: errorMessage,
-      durationMs: Date.now() - startTime
-    });
-  }
-}
+// Argument Schemas
+import { 
+  KillTripArgsSchema, 
+  SoberThinkingArgsSchema, 
+  BraveSearchArgsSchema 
+} from './types/tool-types.js';
 
 /**
  * Main server startup function
  */
 async function main(): Promise<void> {
   try {
-    logger.info('Chlorpromazine MCP Server starting...', {
+    logger.info('Chlorpromazine MCP Server starting (Modern API)...', {
       version: SERVER_INFO.version,
       nodeEnv: config.nodeEnv,
       port: config.port
     });
 
-    // Create MCP server
-    const server = createServer();
-    logger.info('MCP server instance created');
+    // Create high-level MCP server
+    const server = new McpServer({
+      name: SERVER_INFO.name,
+      version: SERVER_INFO.version,
+    });
 
-    // Configure transport
-    const transportOptions: StreamableHTTPServerTransportOptions = {
-      sessionIdGenerator: () => randomUUID(),
-      onsessioninitialized: (sessionId: string) => {
-        logger.info('MCP session initialized', { sessionId });
+    // --- Tool Registration ---
+    
+    // kill_trip
+    server.tool(
+      'kill_trip',
+      'Search official documentation via SerpAPI to verify facts and avoid hallucinations',
+      KillTripArgsSchema.shape,
+      async (args) => {
+        logger.info('Executing tool: kill_trip', { query: args.query });
+        const result = await executeKillTrip(
+          { name: 'kill_trip', arguments: args } as any, 
+          { rateLimitId: 'default' }
+        );
+        return {
+          content: result.content
+        };
+      }
+    );
+
+    // sober_thinking
+    server.tool(
+      'sober_thinking',
+      'Analyze current project files to ground responses in actual project state',
+      SoberThinkingArgsSchema.shape,
+      async (args) => {
+        logger.info('Executing tool: sober_thinking');
+        const result = await executeSoberThinking(
+          { name: 'sober_thinking', arguments: args } as any, 
+          { rateLimitId: 'default' }
+        );
+        return {
+          content: result.content
+        };
+      }
+    );
+
+    // brave_search
+    server.tool(
+      'brave_search',
+      'Search the web using Brave Search API for up-to-date information',
+      BraveSearchArgsSchema.shape,
+      async (args) => {
+        logger.info('Executing tool: brave_search', { query: args.query });
+        const result = await executeBraveSearch(
+          { name: 'brave_search', arguments: args } as any, 
+          { rateLimitId: 'default' }
+        );
+        return {
+          content: result.content
+        };
+      }
+    );
+
+    // --- Prompt Registration ---
+
+    // sober_thinking
+    server.prompt(
+      'sober_thinking',
+      'Provides a senior developer analysis of the project based on OS, Git history, and project files.',
+      {},
+      async () => ({
+        messages: [{
+          role: 'user',
+          content: {
+            type: 'text',
+            text: `You are a senior software developer tasked with analyzing a project.
+
+**Instructions:**
+1. Use the 'sober_thinking' tool to gather context. This will provide you with OS information, recent git history, and the contents of README.md, .env, and CHANGELOG.md.
+2. Review all the information provided by the tool.
+3. Provide a concise analysis of the project's current state, potential issues, and your overall thoughts as a senior developer.
+4. Structure your analysis clearly with headings.
+
+**Important:** Base your entire analysis on the information provided by the tool. Do not hallucinate or make assumptions.`
+          }
+        }]
+      })
+    );
+
+    // buzzkill
+    server.prompt(
+      'buzzkill',
+      'Debug systematic issues with structured analysis and reality-checking',
+      {
+        ISSUE_DESCRIPTION: z.string().describe('Description of the issue or problem'),
+        RECENT_CHANGES: z.string().optional().describe('Any recent changes that might be related'),
+        EXPECTED_BEHAVIOR: z.string().optional().describe('What should happen'),
+        ACTUAL_BEHAVIOR: z.string().optional().describe('What actually happens')
       },
-    };
+      async (args) => {
+        let promptText = `You need to systematically debug this issue: "${args.ISSUE_DESCRIPTION}"
 
-    const transport = new StreamableHTTPServerTransport(transportOptions);
-    logger.info('StreamableHTTPServerTransport initialized');
+**Debugging methodology:**
+1. **Ground yourself in reality first**
+   - Use the sober_thinking tool to read current project files
+   - Understand the actual codebase state, not assumptions
 
-    // Connect transport to server
-    await server.connect(transport);
-    logger.info('MCP transport connected to server');
+2. **Gather additional facts**
+   - Use kill_trip tool to search for similar issues in documentation
+   - Look for known solutions or common pitfalls
 
-    // Create HTTP server
-    const httpServer = http.createServer((req, res) => {
-      handleHttpRequest(req, res, transport).catch(error => {
-        logger.error('Unhandled HTTP request error', {
-          error: error instanceof Error ? error.message : 'Unknown error',
-          url: req.url,
-          method: req.method
-        });
+3. **Systematic analysis**
+   - Break down the problem into components
+   - Identify what's working vs. what's broken
+   - Look for patterns or correlations
+
+4. **Generate hypotheses**
+   - Based on facts, not speculation
+   - Prioritize most likely causes
+   - Consider recent changes as potential triggers
+
+**Issue details:**`;
+
+        if (args.RECENT_CHANGES) {
+          promptText += `\n- **Recent changes:** ${args.RECENT_CHANGES}`;
+        }
+        
+        if (args.EXPECTED_BEHAVIOR) {
+          promptText += `\n- **Expected behavior:** ${args.EXPECTED_BEHAVIOR}`;
+        }
+        
+        if (args.ACTUAL_BEHAVIOR) {
+          promptText += `\n- **Actual behavior:** ${args.ACTUAL_BEHAVIOR}`;
+        }
+
+        promptText += `
+
+**Your response should include:**
+1. Summary of current project state (from sober_thinking)
+2. Relevant documentation findings (from kill_trip searches)
+3. Step-by-step diagnostic approach
+4. Specific actionable recommendations
+5. Potential risks and how to mitigate them
+
+**Remember:** Be methodical, fact-based, and avoid speculation. If you need more information, ask specific questions.`;
+
+        return {
+          messages: [{
+            role: 'user',
+            content: {
+              type: 'text',
+              text: promptText
+            }
+          }]
+        };
+      }
+    );
+
+    // --- Web Server Setup ---
+
+    const app = express();
+    let transport: SSEServerTransport | null = null;
+
+    app.get('/sse', async (req: Request, res: Response) => {
+      logger.info('New SSE connection attempt');
+      transport = new SSEServerTransport('/messages', res);
+      await server.connect(transport);
+    });
+
+    app.post('/messages', async (req: Request, res: Response) => {
+      if (!transport) {
+        res.status(400).send('No active SSE session');
+        return;
+      }
+      await transport.handlePostMessage(req, res);
+    });
+
+    app.get('/healthz', (req: Request, res: Response) => {
+      res.json({
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+        version: SERVER_INFO.version,
+        checks: {
+          serpApi: serpApiClient.isConfigured()
+        }
       });
     });
 
-    // Start listening
-    httpServer.listen(config.port, () => {
-      logger.info('Chlorpromazine MCP Server ready', {
+    app.listen(config.port, () => {
+      logger.info('Chlorpromazine MCP Server ready (SSE)', {
         port: config.port,
-        environment: config.nodeEnv,
-        capabilities: {
-          tools: ['kill_trip', 'sober_thinking'],
-          prompts: ['sober_thinking', 'fact_checked_answer', 'buzzkill'],
-          sampling: true
-        },
-        endpoints: {
-          health: `/healthz`,
-          mcp: '/ (POST for JSON-RPC)',
-          sse: '/ (GET with Accept: text/event-stream)'
-        }
+        env: config.nodeEnv
       });
     });
-
-    // Graceful shutdown handling
-    const gracefulShutdown = (signal: string) => {
-      logger.info(`${signal} received: starting graceful shutdown`);
-      
-      httpServer.close((error) => {
-        if (error) {
-          logger.error('Error closing HTTP server', { error: error.message });
-        } else {
-          logger.info('HTTP server closed');
-        }
-        
-        try {
-          server.close();
-          logger.info('MCP server closed');
-        } catch (error) {
-          logger.error('Error closing MCP server', {
-            error: error instanceof Error ? error.message : 'Unknown error'
-          });
-        }
-        
-        process.exit(error ? 1 : 0);
-      });
-    };
-
-    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
   } catch (error) {
     logger.error('Failed to start server', {
@@ -319,8 +240,4 @@ async function main(): Promise<void> {
   }
 }
 
-// Start the server
-main().catch(error => {
-  console.error('Unhandled startup error:', error);
-  process.exit(1);
-});
+main();
