@@ -23,7 +23,18 @@
     "type": "git",
     "url": "git+https://github.com/82deutschmark/chlorpromazine-mcp.git"
   },
-  "keywords": [],
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "documentation",
+    "fact-checking",
+    "planning",
+    "strategic-planning",
+    "business-planning",
+    "hallucination-prevention",
+    "serpapi",
+    "code-quality"
+  ],
   "author": "",
   "license": "ISC",
   "bugs": {

@@ -21,12 +21,14 @@ import { serpApiClient } from './services/serpapi.js';
 import { executeKillTrip } from './tools/kill-trip/index.js';
 import { executeSoberThinking } from './tools/sober-thinking/index.js';
 import { executeBraveSearch } from './tools/brave-search/index.js';
+import { executeStrategicPlan } from './tools/strategic-plan/index.js';
 
 // Argument Schemas
 import { 
   KillTripArgsSchema, 
   SoberThinkingArgsSchema, 
-  BraveSearchArgsSchema 
+  BraveSearchArgsSchema,
+  StrategicPlanArgsSchema
 } from './types/tool-types.js';
 
 /**
@@ -91,6 +93,23 @@ async function main(): Promise<void> {
         logger.info('Executing tool: brave_search', { query: args.query });
         const result = await executeBraveSearch(
           { name: 'brave_search', arguments: args } as any, 
+          { rateLimitId: 'default' }
+        );
+        return {
+          content: result.content
+        };
+      }
+    );
+
+    // strategic_plan
+    server.tool(
+      'strategic_plan',
+      'Generate comprehensive strategic plans using PlanExe MCP Server. Use for business planning, project roadmaps, workflow optimization, or any complex multi-step planning task.',
+      StrategicPlanArgsSchema.shape,
+      async (args) => {
+        logger.info('Executing tool: strategic_plan', { promptSnippet: args.prompt.substring(0, 50) });
+        const result = await executeStrategicPlan(
+          { name: 'strategic_plan', arguments: args } as any, 
           { rateLimitId: 'default' }
         );
         return {

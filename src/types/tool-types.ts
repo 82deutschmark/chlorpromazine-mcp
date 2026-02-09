@@ -139,6 +139,54 @@ export const BraveSearchResultJsonSchema = {
   required: ['results', 'query', 'resultCount'],
 };
 
+// Strategic Plan Tool Types (PlanExe integration)
+export const StrategicPlanArgsSchema = z.object({
+  prompt: z.string().min(10).max(5000).describe('Brief description of what you want to plan (business, project, workflow, etc.)'),
+});
+
+export type StrategicPlanArgs = z.infer<typeof StrategicPlanArgsSchema>;
+
+export const StrategicPlanResultSchema = z.object({
+  task_id: z.string().optional().describe('PlanExe task ID for status tracking'),
+  status: z.string().describe('Task status (queued, running, completed, failed)'),
+  message: z.string().optional().describe('Status message or error details'),
+});
+
+export type StrategicPlanResult = z.infer<typeof StrategicPlanResultSchema>;
+
+// JSON Schema definitions for MCP tool registration
+export const StrategicPlanArgsJsonSchema = {
+  type: 'object' as const,
+  properties: {
+    prompt: { 
+      type: 'string' as const, 
+      description: 'Brief description of what you want to plan (business, project, workflow, etc.)',
+      minLength: 10,
+      maxLength: 5000
+    },
+  },
+  required: ['prompt'],
+};
+
+export const StrategicPlanResultJsonSchema = {
+  type: 'object' as const,
+  properties: {
+    task_id: { 
+      type: 'string' as const, 
+      description: 'PlanExe task ID for status tracking' 
+    },
+    status: { 
+      type: 'string' as const, 
+      description: 'Task status (queued, running, completed, failed)' 
+    },
+    message: { 
+      type: 'string' as const, 
+      description: 'Status message or error details' 
+    },
+  },
+  required: ['status'],
+};
+
 // Tool registration interfaces
 export interface ToolDefinition {
   name: string;

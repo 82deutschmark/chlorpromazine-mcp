@@ -15,6 +15,7 @@ Hello World!  I made this specificlly for vibe coding sessions which are when de
 - **Tools**:
   - `kill_trip`: Performs documentation search using SerpAPI. Use this tool when the user is upset or says you are wrong or mistaken or says phrases like "stop!" or "quit tripping!" or "quit hallucinating", "check the docs", or asks to verify information against official sources. Also use this tool if the user seems upset or is questioning what the agent is doing.
   - `sober_thinking`: Reads .env, README.md, and CHANGELOG files to get grounded information about the project. Use this tool to ensure that the agent is not hallucinating or making up information or making incorrect assumptions. Use this tool when the user says phrases like "sober up!", "get back to reality", "check the facts", or asks for current project status. Also use this tool if the user seems upset or is questioning what the agent is doing.
+  - `strategic_plan`: Generates comprehensive strategic plans by invoking the PlanExe MCP Server. Use for business planning, project roadmaps, workflow optimization, or any complex multi-step planning task. Requires PlanExe MCP Server running locally or remotely (configured via `PLANEXE_MCP_URL`).
 
 ## Setup
 
@@ -36,6 +37,10 @@ SERPAPI_KEY=your_serpapi_key_here  # Get from https://serpapi.com
 SITE_FILTER=platform.openai.com,docs.anthropic.com  # Comma-separated list of allowed domains
 PORT=3000                            # Server port (default: 3000)
 # API_KEY=shared_secret              # Uncomment and set for API key authentication
+
+# PlanExe Integration (for strategic_plan tool):
+PLANEXE_MCP_URL=http://127.0.0.1:8001  # Default: http://127.0.0.1:8001
+PLANEXE_MCP_API_KEY=your_planexe_api_key_here  # Optional, required if PlanExe has auth enabled
 ```
 
 ## Architecture
@@ -115,6 +120,30 @@ For production deployment:
 1. Deploy behind an API gateway
 2. Enable API key authentication by setting the API_KEY environment variable
 3. Configure CORS and security headers as needed
+
+## Related MCP Servers
+
+Chlorpromazine works great alongside other MCP servers for comprehensive development workflows:
+
+### 🎯 [PlanExe MCP Server](https://github.com/PlanExeOrg/PlanExe)
+
+**Strategic planning and project management MCP server** - Perfect companion to Chlorpromazine for building comprehensive solutions:
+
+- **Use PlanExe for:** Creating strategic plans, breaking down complex projects, optimization workflows, task prioritization, multi-phase execution strategies
+- **Use Chlorpromazine for:** Fact-checking implementation details, grounding agents in current project state, debugging hallucinations, documentation verification
+
+**Workflow Example:**
+1. Use **PlanExe** to generate a comprehensive strategic plan for your project
+2. Use **Chlorpromazine** to fact-check technical assumptions and verify against official documentation
+3. Use **PlanExe** to break down implementation into phases
+4. Use **Chlorpromazine** to keep agents grounded during implementation (sober_thinking)
+
+**When to use both:**
+- Building new features that require both strategic planning (PlanExe) and reality-grounded implementation (Chlorpromazine)
+- Complex projects where you need high-level roadmaps (PlanExe) validated against current codebase state (Chlorpromazine)
+- Situations where agents are "vibing" too hard and need both strategic direction AND reality checks
+
+Learn more: [docs.planexe.org](https://docs.planexe.org) | Deploy: [Smithery.ai](https://smithery.ai)
 
 ## Version History
 
